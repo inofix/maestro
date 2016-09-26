@@ -1,0 +1,165 @@
+#!/bin/bash -e
+########################################################################
+#** Version:
+#* This script helps ..?
+#
+# note: the frame for this script was auto-created with
+# *https://github.com/inofix/admin-toolbox/blob/master/makebashscript.sh*
+########################################################################
+#
+#  This is Free Software; feel free to redistribute and/or modify it
+#  under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; version 3 of the License.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  Copyright 2016, Michael Lustenberger <mic@inofix.ch>
+#
+########################################################################
+[ "$1" == "debug" ] && shift && set -x
+
+## variables ##
+
+### you may copy the following variables into this file for having your own
+### local config ...
+#conffile=.maestro.sh
+
+### {{{
+
+dryrun=1
+needsroot=1
+
+### }}}
+
+# Unsetting this helper variable
+_pre=""
+
+# The system tools we gladly use. Thank you!
+declare -A sys_tools
+sys_tools=( ["_awk"]="/usr/bin/awk"
+            ["_cat"]="/bin/cat"
+            ["_cp"]="/bin/cp"
+            ["_grep"]="/bin/grep"
+            ["_id"]="/usr/bin/id"
+            ["_mkdir"]="/bin/mkdir"
+            ["_pwd"]="/bin/pwd"
+            ["_rm"]="/bin/rm"
+            ["_rmdir"]="/bin/rmdir"
+            ["_sed"]="/bin/sed"
+            ["_sed_forced"]="/bin/sed"
+            ["_tr"]="/usr/bin/tr" )
+# this tools get disabled in dry-run and sudo-ed for needsroot
+danger_tools=( "_cp" "_cat" "_dd" "_mkdir" "_sed" "_rm" "_rmdir" )
+# special case sudo (not mandatory)
+_sudo="/usr/bin/sudo"
+
+## functions ##
+
+print_usage()
+{
+    echo "usage: $0"
+}
+
+print_help()
+{
+    print_usage
+    $_grep "^#\* " $0 | $_sed_forced 's;^#\*;;'
+}
+
+print_version()
+{
+    $_grep "^#\*\* " $0 | $_sed 's;^#\*\*;;'
+}
+
+die()
+{
+    echo "$@"
+    exit 1
+}
+
+error()
+{
+    print_usage
+    echo ""
+    die "Error: $@"
+}
+
+## logic ##
+
+## first set the system tools
+for t in ${!sys_tools[@]} ; do
+    if [ -x "${sys_tools[$t]##* }" ] ; then
+        export ${t}="${sys_tools[$t]}"
+    else
+        error "Missing system tool: ${sys_tools[$t]##* } must be installed."
+    fi
+done
+
+[ ! -f "/etc/$conffile" ] || . "/etc/$conffile"
+[ ! -f "/usr/etc/$conffile" ] || . "/usr/etc/$conffile"
+[ ! -f "/usr/local/etc/$conffile" ] || . "/usr/local/etc/$conffile"
+[ ! -f ~/"$conffile" ] || . ~/"$conffile"
+[ ! -f "$conffile" ] || . "$conffile"
+
+#*  options:
+while true ; do
+    case "$1" in
+#*      -c |--config conffile               alternative config file
+        -c|--config)
+            shift
+            if [ -r "$1" ] ; then
+                . $1
+            else
+                die " config file $1 does not exist."
+            fi
+        ;;
+#*      -h |--help                          print this help
+        -h|--help)
+            print_help
+            exit 0
+        ;;
+#*      -n |--dry-run                       do not change anything
+        -n|--dry-run)
+            dryrun=0
+        ;;
+#*      -v |--version
+        -v|--version)
+            print_version
+            exit
+        ;;
+        -*|--*)
+            error "option $1 not supported"
+        ;;
+        *)
+            break
+        ;;
+    esac
+    shift
+done
+
+if [ $dryrun -eq 0 ] ; then
+    _pre="echo "
+fi
+
+if [ $needsroot -eq 0 ] ; then
+
+    iam=$($_id -u)
+    if [ $iam -ne 0 ] ; then
+        if [ -x "$_sudo" ] ; then
+
+            _pre="$_pre $_sudo"
+        else
+            error "Priviledges missing: use ${_sudo}."
+        fi
+    fi
+fi
+
+for t in ${danger_tools[@]} ; do
+    export ${t}="$_pre ${sys_tools[$t]}"
+done
+
+exit 0
+
