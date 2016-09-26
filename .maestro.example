@@ -1,0 +1,26 @@
+# this configures maestro.sh
+
+# usually the local dir
+workdir="$pwd/workdir"
+
+# the reclass sources will constitute the knowledge base for the meta data
+inventorydirs=(
+    ["main"]="$pwd/inventory"
+)
+
+# ansible/debops instructions
+playbookdirs=(
+    ["common_playbooks"]=""
+)
+
+# the plain config files, either as a source or target (or both)
+storagedirs=(
+    ["any_confix"]=""
+)
+
+# further directories/repos that can be used
+localdirs=(
+    ["packer_templates"]=""
+    ["vagrant_boxes"]=""
+)
+
