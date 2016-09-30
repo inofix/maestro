@@ -42,15 +42,60 @@
 [ "$1" == "debug" ] && shift && set -x
 
 ## variables ##
+# important directories
+declare -A inventorydirs
+declare -A playbookdirs
+declare -A storagedirs
+declare -A localdirs
 
 ### you may copy the following variables into this file for having your own
 ### local config ...
-#conffile=.maestro.sh
-
+conffile=.maestro
 ### {{{
 
+# for status mode concentrate on this ip protocol
+ipprot="-4"
+
+# whether to take action
 dryrun=1
+# whether we must run as root
 needsroot=1
+
+# rsync mode
+rsync_options="-a -m --exclude=.keep"
+
+merge_only_this_subdir=""
+merge_mode="dir"
+
+# usually the local dir
+workdir="./workdir"
+
+# the reclass sources will constitute the knowledge base for the meta data
+inventorydirs=(
+    ["main"]="./inventory"
+)
+
+# ansible/debops instructions
+playbookdirs=(
+    ["common_playbooks"]=""
+)
+
+# the plain config files, either as a source or target (or both)
+storagedirs=(
+    ["any_confix"]=""
+)
+
+# further directories/repos that can be used
+localdirs=(
+    ["packer_templates"]=""
+    ["vagrant_boxes"]=""
+)
+
+# this is the hosts link
+ansible_connect=/usr/share/reclass/reclass-ansible
+
+# options to pass to ansible (see also -A/--ansible-options)
+ansibleoptions=""
 
 ### }}}
 
