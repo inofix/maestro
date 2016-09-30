@@ -353,5 +353,42 @@ for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
 done
 
+for t in ${opt_danger_tools[@]} ; do
+    [ -z "${!t}" ] || export ${t}="$_pre ${opt_sys_tools[$t]}"
+done
+
 exit 0
+
+init()
+{
+    cdir="$1"
+    f="$2"
+    [ -f "$cdir/hosts" ] && error "a file '$cdir/hosts' already exists, please remove manually first.."
+    [ -f "$cdir/reclass-config.yml" ] && error "a file '$cdir/reclass-config.yml' already exists, please remove manually first.."
+    [ -d "$cdir/reclass-env" ] && error "a directory '$cdir/reclass-env' already exists, please remove manually first.."
+    $_ln -s $ansible_connect "$cdir/hosts"
+    if [ -z "$_pre" ] ; then
+        $_cat > "$cdir/reclass-config.yml" << EOF
+storage_type: yaml_fs
+inventory_base_uri: $cdir/reclass-env
+EOF
+    else
+        echo "write config file $cdir/reclass-config.yml"
+        echo "  storage_type: yaml_fs"
+        echo "  inventory_base_uri: $cdir/reclass-env"
+    fi
+    $_mkdir -p "$cdir/reclass-env/nodes" "$cdir/reclass-env/classes"
+    if [ -z "$f" ] ; then
+        l="$_ln -s"
+    else
+        l="$_cp -r"
+    fi
+    $l $inventorydir/classes/* "$cdir/reclass-env/classes/"
+    if [ -z "$projectfilter" ] ; then
+        $l $inventorydir/nodes/* "$cdir/reclass-env/nodes/"
+    else
+        $l $inventorydir/nodes/$projectfilter "$cdir/reclass-env/nodes/"
+    fi
+
+}
 
