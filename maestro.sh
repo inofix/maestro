@@ -152,7 +152,7 @@ opt_danger_tools=( "_ansible" "_ansible_playbook" )
 
 print_usage()
 {
-    echo "usage: $0"
+    echo "usage: $0 [options] action"
 }
 
 print_help()
@@ -187,6 +187,14 @@ for t in ${!sys_tools[@]} ; do
         export ${t}="${sys_tools[$t]}"
     else
         error "Missing system tool: ${sys_tools[$t]##* } must be installed."
+    fi
+done
+
+for t in ${!opt_sys_tools[@]} ; do
+    if [ -x "${opt_sys_tools[$t]##* }" ] ; then
+        export ${t}="${opt_sys_tools[$t]}"
+    else
+        echo "Warning! Missing system tool: ${opt_sys_tools[$t]##* }."
     fi
 done
 
