@@ -204,7 +204,7 @@ done
 [ ! -f ~/"$conffile" ] || . ~/"$conffile"
 [ ! -f "$conffile" ] || . "$conffile"
 
-#*  options:
+#* options:
 while true ; do
     case "$1" in
 #*      -c |--config conffile               alternative config file
