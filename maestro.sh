@@ -1,27 +1,12 @@
 #!/bin/bash -e
 ########################################################################
 #** Version: 0.1
-#* This script connects meta data about host projects and concrete
+#* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
 #* This way all the meta data can be stored at a single place and
 #* in a uniform way but still be used for the actual work with the
 #* hosts in question.
-#*
-#* The meta data is stored with reclass[1], the actual work on the
-#* hosts is done via ansible[2] playbooks, the core can be found
-#* under common-playbooks[3], but is easily extensible. This connector
-#* supports also simple merging of plain config files and other little
-#* tricks..
-#*
-#* It is currently written in bash and gawk (see [4]), but will probably
-#* be rewritten in python[5] soon.
-#*
-#* [1] http://reclass.pantsfullofunix.net/
-#* [2] https://www.ansible.com/
-#* [3] https://github.com/zwischenloesung/common-playbooks
-#* [4] https://www.gnu.org/
-#* [5] https://www.python.org/
 #
 # note: the frame for this script was auto-created with
 # *https://github.com/inofix/admin-toolbox/blob/master/makebashscript.sh*
