@@ -231,7 +231,7 @@ while true ; do
             shift
             ansibleoptions="$1"
         ;;
-#*  --config|-c conffile           alternative config file
+#*  --config|-c conffile            alternative config file
         -c|--config)
             shift
             if [ -r "$1" ] ; then
@@ -250,19 +250,74 @@ while true ; do
         -f|--force)
             force=0
         ;;
-#*  --dry-run|-n                       do not change anything
+#*  --dry-run|-n                    do not change anything
         -n|--dry-run)
             dryrun=0
         ;;
-#*  --help|-h                          print this help
+#*  --dry-run-rsync                 do all but on rsync just pretend
+        --dry-run-rsync|--rsync-dry-run)
+            rsync_options="$rsync_options -n"
+        ;;
+#*  --dry-run-ansible               do all but on ansible just pretend
+        --dry-run-ansible|--ansible-dry-run)
+            ansibleoptions="$ansibleoptions -C"
+        ;;
+#*  --help|-h                       print this help
         -h|--help)
             print_help
             exit 0
         ;;
-#*  --version|-v
-        -v|--version)
+#*  --host|-H host                  only process a certain host
+        -H|--host|-N|--node)
+            shift
+            nodefilter="$1"
+        ;;
+#*  --merge|-m mode                 specify how to merge, available modes:
+#*                                    custom    based on "re-merge-custom"
+#*                                    dir       nodename based dirs (default)
+#*                                    in        nodename infixed files
+#*                                    pre       nodename prefixed files
+#*                                    post      nodename postfixed files
+        -m|--merge)
+            shift
+            merge_mode=$1
+        ;;
+#*  --parser-test|-p                only output what would be fed to script
+        -p|--parser-test)
+            parser_dryrun=0
+        ;;
+#*  --project|-P project            only process nodes from this project,
+#*                                  which practically is the node namespace
+#*                                  from reclass (directory hierarchy)
+        -P|--project)
+            shift
+            projectfilter="$1"
+            classfilter="project.$1"
+        ;;
+#*  --subdir-only-merge|-s          concentrate on this subdir only
+        -s|--subdir-only-merge)
+            shift
+            merge_only_this_subdir=$1
+        ;;
+#*  --verbose|-v                    print out what is done
+        -v|--verbose)
+            if [ -z "$ansible_verbose" ] ; then
+                ansible_verbose="-v"
+            else
+                ansible_verbose="-vvv"
+            fi
+            rsync_options="$rsync_options -v"
+        ;;
+#*  --version|-V                    print version information and exit
+        -V|--version)
             print_version
             exit
+        ;;
+#*  --workdir|-w directory          manually specify a temporary workdir
+        -w|--workdir)
+            shift
+            workdir=$1
+            $_mkdir -p $workdir
         ;;
         -*|--*)
             error "option $1 not supported"
@@ -286,7 +341,7 @@ if [ $needsroot -eq 0 ] ; then
 
             _pre="$_pre $_sudo"
         else
-            error "Priviledges missing: use ${_sudo}."
+            error "Missing system tool: $_sudo must be installed."
         fi
     fi
 fi
