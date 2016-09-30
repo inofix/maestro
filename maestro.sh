@@ -358,6 +358,325 @@ for t in ${opt_danger_tools[@]} ; do
 done
 
 exit 0
+reclass_parser='BEGIN {
+                hostname="'$hostname'"
+                domainname="'$domainname'"
+                fqdn="'$n'"
+                split(p_keys, project_keys, ";")
+                split(p_vals, project_vals, ";")
+                for (i=1;i<=p_len;i++) {
+                    projects[project_keys[i]]=project_vals[i]
+                }
+                metamode="reclass"
+                mode="none"
+                rckey=""
+                list=""
+            }
+            #sanitize input a little
+            /<|>|\$|\|`/ {
+                next
+            }
+            /{{ .* }}/ {
+                gsub("{{ hostname }}", hostname)
+                gsub("{{ domainname }}", domainname)
+                gsub("{{ fqdn }}", fqdn)
+                for (var in projects) {
+                    gsub("{{ "var" }}", projects[var])
+                }
+            }
+            !/^ *- / {
+#print "we_are_here="metamode"-"mode
+                tmp=$0
+                # compare the number of leading spaces divided by 2 to
+                # the number of colons in metamode to decide if we are
+                # still in the same context
+                sub("\\S.*", "", tmp)
+                numspaces=length(tmp)
+                tmp=metamode
+                numcolons=gsub(":", "", tmp)
+                doprint="f"
+                if (( numcolons == 0 ) && ( numspaces == 2 )) {
+                    doprint=""
+                } else {
+                    while ( numcolons >= numspaces/2 ) {
+                        sub(":\\w*$", "", metamode)
+                        numcolons--
+                        doprint=""
+                    }
+                }
+                if (( doprint == "" ) && ( mode != "none" ) && ( list != "" )) {
+                    print mode"=( "list" )"
+                    mode="none"
+                    list=""
+                    doprint="f"
+                }
+            }
+            /^  node:/ {
+                if ( metamode == "reclass" ) {
+                  sub("/.*", "", $2)
+                  print "project="$2
+                  next
+                }
+            }
+            /^applications:$/ {
+                metamode="none"
+                mode="applications"
+                next
+            }
+            /^classes:$/ {
+                metamode="none"
+                mode="classes"
+                next
+            }
+            /^environment:/ {
+                metamode="none"
+                mode="none"
+                print "environement="$2
+                next
+            }
+            /^parameters:/ {
+                metamode="parameters"
+                mode="none"
+            }
+            /^  os:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  print "os_name="$2
+                }
+                next
+            }
+            /^  os__distro:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  print "os_distro="$2
+                }
+                next
+            }
+            /^  os__codename:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  print "os_codename="$2
+                }
+                next
+            }
+            /^  os__release:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  print "os_release="$2
+                }
+                next
+            }
+            /^  os__package-selections:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  print "os_package_selections="$2
+                }
+                next
+            }
+            /^  host__infrastructure:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  l=length($1)
+                  print "hostinfrastructure=\""substr($0, l+4)"\""
+                }
+                next
+            }
+            /^  location:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  l=length($1)
+                  print "hostlocation=\""substr($0, l+4)"\""
+                }
+                next
+            }
+            /^  host__type:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  l=length($1)
+                  print "hosttype=\""substr($0, l+4)"\""
+                }
+                next
+            }
+            /^  role:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  print "role="$2
+                }
+                next
+            }
+            /^  debian-.*-packages:$/ {
+                if ( metamode == "parameters" ) {
+                  gsub("-", "_")
+                  mode=substr($1, 0, length($1)-1)
+                }
+                next
+            }
+            /^  storage_dirs:$/ {
+                if ( metamode == "parameters" ) {
+                  mode="storagedirs"
+                }
+                next
+            }
+            /^  debops:$/ {
+#print "debops_="metamode
+                if ( metamode == "parameters" ) {
+                    metamode=metamode":debops"
+                    mode="debops"
+                }
+                next
+            }
+            /^  ansible:$/ {
+                if ( metamode == "parameters" ) {
+                    metamode=metamode":ansible"
+                    mode="ansible"
+                }
+            }
+            /^  re-merge:$/ {
+                if ( metamode == "parameters" ) {
+                    metamode=metamode":remerge"
+                }
+            }
+            /^    direct:$/ {
+                if ( metamode == "parameters:remerge" ) {
+                  mode="remergedirect"
+                }
+                next
+            }
+            /^    custom:$/ {
+                if ( metamode == "parameters:remerge" ) {
+                    metamode=metamode":custom"
+                    mode="remergecustom"
+                }
+                next
+            }
+            /^      .*:$/ {
+                if ( mode == "remergecustom" ) {
+                    rckey=$1
+                    sub(":", "", rckey)
+                    next
+                }
+            }
+            /^        file: .*$/ {
+                if (( mode == "remergecustom" ) && ( rckey != "" )) {
+                    gsub("\047", "");
+                    print "remergecustomsrc[\""rckey"\"]=\""$2"\""
+                }
+                next
+            }
+            /^        dest: .*$/ {
+                if (( mode == "remergecustom" ) && ( rckey != "" )) {
+                    gsub("\047", "");
+                    print "remergecustomdest[\""rckey"\"]=\""$2"\""
+                }
+                next
+            }
+            /^      .*$/ {
+                if ( metamode == "parameters:debops" ) {
+#print "debops___="metamode
+                    gsub("'"'"'", "")
+                    list=list "\n'"'"'" $0 "'"'"'"
+                    next
+                }
+            }
+            /^    .*$/ {
+                if ( metamode == "parameters:debops" ) {
+#print "debops__="metamode
+                    next
+                } else if ( metamode == "parameters:ansible" ) {
+                    gsub("\"", "\x22")
+                    gsub(":", "\x3A")
+                    # pure trial and error as I just dont get it..
+                    gsub("%", "%%")
+                    a=$1
+                    sub(":", "", a)
+                    b=$0
+                    sub(" *"$1" ", "", b)
+                    print "ansible_meta[\""a"\"]='"'"'" b "'"'"'"
+                    next
+                }
+            }
+            /^ *- / {
+                if (( mode != "none") && ( mode != "debops" )) {
+                    gsub("'"'"'", "")
+                    sub("- ", "")
+                    list=list "\n'"'"'" $0 "'"'"'"
+                }
+                next
+            }
+            {
+                mode="none"
+            }
+            END {
+            }'
+
+## define these in parse_node()
+re_define_parsed_variables()
+{
+#*** Associative Array:     ansible_meta
+    declare -g -A ansible_meta
+    ansible_meta=()
+#*** Array:                 applications
+    applications=()
+#*** Array:                 classes
+    classes=()
+#*** String:                environemnt
+    environement=""
+#*** Array:                 parameters.debops
+    debops=()
+#*** String:                parameters.host__infrastructure
+    hostinfrastructure=""
+#*** String:                parameters.host__locations
+    hostlocation=""
+#*** String:                parameters.host__type
+    hosttype=""
+#*** String:                parameters.os__codename
+    os_codename=""
+#*** String:                parameters.os__distro
+    os_distro=""
+#*** String:                parameters.os__name
+    os_name=""
+#*** String:                parameters.os__package-selections
+    os_package_selections=""
+#*** String:                parameters.os__release
+    os_release=""
+#*** String                 parameters.project
+    project=""
+#*** Array:                 parameters.storage_dirs
+    storagedirs=()
+#*** Array:                 parameters.re-merge.direct
+    remergedirect=()
+#*** Associative array:     parameters.re-merge.custom.src
+    declare -g -A remergecustomsrc
+    remergecustomsrc=()
+#*** Associative array:     parameters.re-merge.custom.dest
+    declare -g -A remergecustomdest
+    remergecustomdest=()
+}
+re_define_parsed_variables
+
+parse_node()
+{
+    # make sure they are empty
+    re_define_parsed_variables
+
+    awk_var_p_keys=";"
+    awk_var_p_vals=";"
+    for k in ${!localdirs[@]} ; do
+        awk_var_p_keys="$k;$awk_var_p_keys"
+        awk_var_p_vals="${localdirs[$k]};$awk_var_p_vals"
+    done
+    if [ $parser_dryrun -eq 0 ] ; then
+        $_reclass -b $inventorydir -n $1 |\
+            $_awk -v p_len=${#localdirs[@]} -v p_keys=$awk_var_p_keys \
+                  -v p_vals=$awk_var_p_vals "$reclass_parser"
+    else
+        eval $(\
+            $_reclass -b $inventorydir -n $1 |\
+            $_awk -v p_len=${#localdirs[@]} -v p_keys=$awk_var_p_keys \
+                  -v p_vals=$awk_var_p_vals "$reclass_parser"
+        )
+    fi
+}
 
 init()
 {
