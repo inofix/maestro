@@ -207,7 +207,7 @@ done
 #* options:
 while true ; do
     case "$1" in
-#*      -c |--config conffile               alternative config file
+#*  --config|-c conffile               alternative config file
         -c|--config)
             shift
             if [ -r "$1" ] ; then
@@ -216,16 +216,16 @@ while true ; do
                 die " config file $1 does not exist."
             fi
         ;;
-#*      -h |--help                          print this help
+#*  --dry-run|-n                       do not change anything
+        -n|--dry-run)
+            dryrun=0
+        ;;
+#*  --help|-h                          print this help
         -h|--help)
             print_help
             exit 0
         ;;
-#*      -n |--dry-run                       do not change anything
-        -n|--dry-run)
-            dryrun=0
-        ;;
-#*      -v |--version
+#*  --version|-v
         -v|--version)
             print_version
             exit
