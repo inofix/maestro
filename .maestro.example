@@ -4,11 +4,11 @@
 maestrodir=""
 
 # usually the local dir
-workdir="$pwd/workdir"
+workdir="$maestrodir/workdir"
 
 # the reclass sources will constitute the knowledge base for the meta data
 inventorydirs=(
-    ["main"]="$pwd/inventory"
+    ["main"]="$maestrodir/inventory"
 )
 
 # ansible/debops instructions
