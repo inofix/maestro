@@ -207,7 +207,31 @@ done
 #* options:
 while true ; do
     case "$1" in
-#*  --config|-c conffile               alternative config file
+#*  --ansible-become-root|-b        Ansible: Use --become-user root -K
+        --ansible-become-root)
+            ansible_root="--become-user root -K"
+        ;;
+#*  --ansible-become-su-root|-B     Ansible: Use --become-method su \
+#*                                              --become-user root -K
+        --ansible-become-su)
+            ansible_root="--become-method su --become-user root -K"
+        ;;
+#*  --ansible-ask-password|-k       ask for the connection pw (see ansible -k)
+        -k|--ask-pass)
+            pass_ask_pass="-k"
+        ;;
+#*  --ansible-extra-vars|-a 'vars'  variables to pass to ansible
+        -a|--ansible-extra-vars)
+            shift
+            ansibleextravars="$1"
+        ;;
+#*  --ansible-options|-A 'options'  options to pass to ansible or
+#*                                  ansible_playbook resp.
+        -A|--ansible-options)
+            shift
+            ansibleoptions="$1"
+        ;;
+#*  --config|-c conffile           alternative config file
         -c|--config)
             shift
             if [ -r "$1" ] ; then
@@ -215,6 +239,16 @@ while true ; do
             else
                 die " config file $1 does not exist."
             fi
+        ;;
+#*  --class|-C class                only process member nodes of this class
+#*                                  (see reclass classes)
+        -C|--class)
+            shift
+            classfilter="$1"
+        ;;
+#*  --force|-f                      do not ask before changing anything
+        -f|--force)
+            force=0
         ;;
 #*  --dry-run|-n                       do not change anything
         -n|--dry-run)
