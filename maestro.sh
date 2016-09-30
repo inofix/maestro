@@ -96,6 +96,7 @@ ansible_connect=/usr/share/reclass/reclass-ansible
 
 # options to pass to ansible (see also -A/--ansible-options)
 ansibleoptions=""
+
 ### }}}
 
 # Unsetting this helper variables (sane defaults)
@@ -137,8 +138,8 @@ sys_tools=( ["_awk"]="/usr/bin/gawk"
             ["_tr"]="/usr/bin/tr"
             ["_wc"]="/usr/bin/wc" )
 # this tools get disabled in dry-run and sudo-ed for needsroot
-danger_tools=( "_cp" "_cat" "_dd" "_ln" "_mkdir"
-               "_sed" "_rm" "_rmdir" "_rsync" )
+danger_tools=( "_cp" "_cat" "_dd" "_ln" "_mkdir" "_mv"
+               "_rm" "_rmdir" "_rsync" "_sed" )
 # special case sudo (not mandatory)
 _sudo="/usr/bin/sudo"
 
