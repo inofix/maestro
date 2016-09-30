@@ -96,30 +96,56 @@ ansible_connect=/usr/share/reclass/reclass-ansible
 
 # options to pass to ansible (see also -A/--ansible-options)
 ansibleoptions=""
-
 ### }}}
 
-# Unsetting this helper variable
+# Unsetting this helper variables (sane defaults)
 _pre=""
+classfilter=""
+nodefilter=""
+projectfilter=""
+
+ansible_root=""
+force=1
+parser_dryrun=1
+pass_ask_pass=""
+ansible_verbose=""
 
 # The system tools we gladly use. Thank you!
 declare -A sys_tools
-sys_tools=( ["_awk"]="/usr/bin/awk"
+sys_tools=( ["_awk"]="/usr/bin/gawk"
+            ["_basename"]="/usr/bin/basename"
             ["_cat"]="/bin/cat"
             ["_cp"]="/bin/cp"
+            ["_dirname"]="/usr/bin/dirname"
+            ["_find"]="/usr/bin/find"
             ["_grep"]="/bin/grep"
             ["_id"]="/usr/bin/id"
+            ["_ip"]="/bin/ip"
+            ["_ln"]="/bin/ln"
+            ["_lsb_release"]="/usr/bin/lsb_release"
             ["_mkdir"]="/bin/mkdir"
+            ["_mv"]="/bin/mv"
             ["_pwd"]="/bin/pwd"
             ["_rm"]="/bin/rm"
             ["_rmdir"]="/bin/rmdir"
+            ["_reclass"]="/usr/bin/reclass"
+            ["_rsync"]="/usr/bin/rsync"
             ["_sed"]="/bin/sed"
             ["_sed_forced"]="/bin/sed"
-            ["_tr"]="/usr/bin/tr" )
+            ["_sort"]="/usr/bin/sort"
+            ["_ssh"]="/usr/bin/ssh"
+            ["_tr"]="/usr/bin/tr"
+            ["_wc"]="/usr/bin/wc" )
 # this tools get disabled in dry-run and sudo-ed for needsroot
-danger_tools=( "_cp" "_cat" "_dd" "_mkdir" "_sed" "_rm" "_rmdir" )
+danger_tools=( "_cp" "_cat" "_dd" "_ln" "_mkdir"
+               "_sed" "_rm" "_rmdir" "_rsync" )
 # special case sudo (not mandatory)
 _sudo="/usr/bin/sudo"
+
+declare -A opt_sys_tools
+opt_sys_tools=( ["_ansible"]="/usr/bin/ansible"
+                ["_ansible_playbook"]="/usr/bin/ansible-playbook" )
+opt_danger_tools=( "_ansible" "_ansible_playbook" )
 
 ## functions ##
 
