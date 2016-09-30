@@ -67,6 +67,9 @@ rsync_options="-a -m --exclude=.keep"
 merge_only_this_subdir=""
 merge_mode="dir"
 
+# maestro's git repo
+maestrodir=""
+
 # usually the local dir
 workdir="./workdir"
 

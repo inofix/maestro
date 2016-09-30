@@ -1,5 +1,8 @@
 # this configures maestro.sh
 
+# maestro's git repo
+maestrodir=""
+
 # usually the local dir
 workdir="$pwd/workdir"
 
