@@ -24,12 +24,12 @@ playbookdirs=(
 
 # the plain config files, either as a source or target (or both)
 storagedirs=(
-    ["any_confix"]=""
+    ["any_confix"]="none"
 )
 
 # further directories/repos that can be used
 localdirs=(
-    ["packer_templates"]=""
-    ["vagrant_boxes"]=""
+    ["packer_templates"]="none"
+    ["vagrant_boxes"]="none"
 )
 
