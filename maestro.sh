@@ -699,6 +699,30 @@ EOF
     fi
 }
 
+#[ -d "$inventorydir/nodes" ] || error "reclass environment not found at $inventorydir/nodes"
+#reclass_filter=""
+#if [ -n "$projectfilter" ] ; then
+#    if [ -d "$inventorydir/nodes/$projectfilter" ] ; then
+#        reclass_filter="-u nodes/$projectfilter"
+#    else
+#        die "This project does not exist in $inventorydir"
+#    fi
+#fi
+#nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
+#            $_awk 'BEGIN {node=1}; \
+#                   /^nodes:/ {node=0};\
+#                   /^  \w/ {if (node == 0) {print now $0}}' |\
+#            $_tr -d ":" | $_sort -r ) )
 
+#* actions:
+case $1 in
+#*  init [directory]                create an environemnt with all the
+#*                                  repos defined in the config, in order
+#*                                  to get a running knowledge base.
+    init)
+        shift
+        [ -f "$conffile" ] || error "Please provide a config file."
+    ;;
+esac
 
 exit 0
