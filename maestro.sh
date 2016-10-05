@@ -27,6 +27,11 @@
 [ "$1" == "debug" ] && shift && set -x
 
 ## variables ##
+maestrodir="$PWD"
+
+# get these repos
+declare -A toclone
+
 # important directories
 declare -A inventorydirs
 declare -A playbookdirs
@@ -342,7 +347,6 @@ for t in ${opt_danger_tools[@]} ; do
     [ -z "${!t}" ] || export ${t}="$_pre ${opt_sys_tools[$t]}"
 done
 
-exit 0
 reclass_parser='BEGIN {
                 hostname="'$hostname'"
                 domainname="'$domainname'"
@@ -693,6 +697,8 @@ EOF
     else
         $l $inventorydir/nodes/$projectfilter "$cdir/reclass-env/nodes/"
     fi
-
 }
 
+
+
+exit 0

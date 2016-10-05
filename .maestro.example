@@ -1,19 +1,25 @@
 # this configures maestro.sh
 
-# maestro's git repo
-maestrodir=""
+# the current projects dir, $PWD as per default
+#maestrodir="$PWD"
 
-# usually the local dir
+# git repos used (use the same name as in the dir arrays below)
+toclone=(
+    ["common_inv"]="https://github.com/zwischenloesung/common-inv"
+    ["common_playbooks"]="https://github.com/zwischenloesung/common-inv"
+)
+
+# a local dir for (semi-)temporary data of the hosts (can savely be removed if necessary)
 workdir="$maestrodir/workdir"
 
-# the reclass sources will constitute the knowledge base for the meta data
+# the reclass inventories will constitute the knowledge base for the meta data
 inventorydirs=(
-    ["main"]="$maestrodir/inventory"
+    ["common_inv"]="$maestrodir/common_inv"
 )
 
 # ansible/debops instructions
 playbookdirs=(
-    ["common_playbooks"]=""
+    ["common_playbooks"]="$maestrodir/common_playbooks"
 )
 
 # the plain config files, either as a source or target (or both)
