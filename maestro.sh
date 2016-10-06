@@ -596,6 +596,93 @@ reclass_parser='BEGIN {
             END {
             }'
 
+# Not all projects use the same access policy - try to give some hints
+ansible_connection_test()
+{
+    if [ "${ansible_meta['prompt_password']}" == "true" ] ; then
+        printf "\e[1;33mWarning: "
+        printf "\e[1;39m$n\e[0m has ansible:prompt_password set to 'true'.\n"
+        printf "         You probably want to use the '-k' flag.\n"
+    fi
+    if [ -n "${ansible_meta['ssh_common_args']}" ] ; then
+        printf "\e[1;33mWarning: "
+        printf "\e[1;39m$n\e[0m has ansible:ssh_common_args set to '${ansible_meta['ssh_common_args']}'.\n"
+        printf "         Please check your ssh configs for that host if you encounter problems.\n"
+    fi
+    for l in connect_timeout use_scp ; do
+        if [ -n "${ansible_meta[$l]}" ] ; then
+            printf "\e[1;33mWarning: "
+            printf "\e[1;39m$n\e[0m has ansible:$l set to '${ansible_meta[$l]}'.\n"
+            printf "         Please control your (.)ansible.cfg if you encounter problems.\n"
+        fi
+    done
+}
+
+# Try to connect to a host an compare some metadata to facts
+connect_node()
+{
+    list_node $n
+    retval=0
+    remote_os=( $( $_ssh $1 $_lsb_release -d 2>/dev/null) ) || retval=$?
+    remote_os_distro=${remote_os[1]}
+    remote_os_name=${remote_os[2]}
+    remote_os_release=${remote_os[3]}
+    remote_os_codename=${remote_os[4]}
+    answer0="${remote_os[1]} ${remote_os[2]} ${remote_os[3]} ${remote_os[4]}"
+    if [ $retval -gt 127 ] ; then
+        printf " \e[1;31m${answer0}\n"
+    elif [ $retval -gt 0 ] ; then
+        printf " \e[1;33m${answer0}\n"
+    else
+        distro_color="\e[0;32m"
+        os_color="\e[0;32m"
+        release_color="\e[0;32m"
+        codename_color="\e[0;32m"
+        if [ -n "$os_distro" ] ; then
+            comp0=$( echo $remote_os_distro | $_sed 's;.*;\L&;' )
+            comp1=$( echo $os_distro | $_sed 's;.*;\L&;' )
+            if [ "$comp0" == "$comp1" ] ; then
+                distro_color="\e[1;32m"
+            else
+                distro_color="\e[1;31m"
+            fi
+        fi
+        if [ -n "$os_release" ] ; then
+            comp0=$( echo $remote_os_release | $_sed 's;.*;\L&;' )
+            comp1=$( echo $os_release | $_sed 's;.*;\L&;' )
+            if [ "$comp0" == "$comp1" ] ; then
+                release_color="\e[1;32m"
+            else
+                release_color="\e[1;31m"
+            fi
+        fi
+        if [ -n "$os_codename" ] ; then
+            comp0=$( echo $remote_os_codename | $_sed 's;.*;\L&;' )
+            comp1=$( echo $os_codename | $_sed 's;.*;\L&;' )
+            if [ "$comp0" == "($comp1)" ] ; then
+                codename_color="\e[1;32m"
+            else
+                codename_color="\e[1;31m"
+            fi
+        fi
+        printf "  $distro_color$remote_os_distro\e[0;39m"
+        printf " $os_color$remote_os_name\e[0;39m"
+        printf " $release_color$remote_os_release\e[0;39m"
+        printf " $codename_color$remote_os_codename\n\e[0;39m"
+        answer1=$( $_ssh $1 $_ip $ipprot address show eth0 | $_grep inet)
+        printf "\e[0;32m$answer1\n\e[0;39m"
+    fi
+}
+
+#
+do_sync()
+{
+    if [ -d "$1" ] ; then
+        $_mkdir -p $2
+        $_rsync $rsync_options $1 $2
+    fi
+}
+
 ## define these in parse_node()
 re_define_parsed_variables()
 {
@@ -704,6 +791,47 @@ list_classes()
     printf "\e[0;39m"
 }
 
+#
+list_debops()
+{
+    list_node $n
+    for (( i=0 ; i < ${#debops[@]} ; i++ )) ; do
+        echo "${debops[i]}"
+    done
+}
+
+# List packages installed
+list_distro_packages()
+{
+    list_node $n
+    ps=()
+    psi=0
+    l=$(eval 'echo ${#'${os_distro}'__packages[@]}')
+    for (( i=0 ; i<l ; i++ )) ; do
+        ps[$psi]=$(eval 'echo ${'${os_distro}'__packages['$i']}')
+        let ++psi
+    done
+    l=$(eval 'echo ${'${os_distro}'_'${os_codename}'_packages[@]}')
+    for (( i=0 ; i<l ; i++ )) ; do
+        ps[$psi]=$(eval 'echo ${'${os_distro}'_'${os_codename}'_packages['$i']}')
+        let ++psi
+    done
+
+    OLDIFS=$IFS
+    IFS="
+"
+    ps=( $(
+        for (( i=0 ; i<${#ps[@]} ; i++ )); do
+            echo "${ps[$i]}"
+        done | $_sort -u
+    ) )
+    IFS=$OLDIFS
+
+    for (( i=0 ; i<${#ps[@]} ; i++ )); do
+        printf "\e[0;33m - ${ps[$i]}\n"
+    done
+}
+
 # Print out info about a host
 list_node()
 {
@@ -793,6 +921,12 @@ list_node_arrays()
     done
 }
 
+# do nothing..
+noop()
+{
+    echo -n ""
+}
+
 # Gather application info for a host
 declare -A applications_dict
 process_applications()
@@ -811,14 +945,6 @@ process_classes()
     done
 }
 
-do_sync()
-{
-    if [ -d "$1" ] ; then
-        $_mkdir -p $2
-        $_rsync $rsync_options $1 $2
-    fi
-}
-
 # Collect all the info about a host
 process_nodes()
 {
@@ -834,67 +960,6 @@ process_nodes()
         parse_node $n
         $command $n
     done
-}
-
-# Try to connect to a host an compare some metadata to facts
-connect_node()
-{
-    list_node $n
-    retval=0
-    remote_os=( $( $_ssh $1 $_lsb_release -d 2>/dev/null) ) || retval=$?
-    remote_os_distro=${remote_os[1]}
-    remote_os_name=${remote_os[2]}
-    remote_os_release=${remote_os[3]}
-    remote_os_codename=${remote_os[4]}
-    answer0="${remote_os[1]} ${remote_os[2]} ${remote_os[3]} ${remote_os[4]}"
-    if [ $retval -gt 127 ] ; then
-        printf " \e[1;31m${answer0}\n"
-    elif [ $retval -gt 0 ] ; then
-        printf " \e[1;33m${answer0}\n"
-    else
-        distro_color="\e[0;32m"
-        os_color="\e[0;32m"
-        release_color="\e[0;32m"
-        codename_color="\e[0;32m"
-        if [ -n "$os_distro" ] ; then
-            comp0=$( echo $remote_os_distro | $_sed 's;.*;\L&;' )
-            comp1=$( echo $os_distro | $_sed 's;.*;\L&;' )
-            if [ "$comp0" == "$comp1" ] ; then
-                distro_color="\e[1;32m"
-            else
-                distro_color="\e[1;31m"
-            fi
-        fi
-        if [ -n "$os_release" ] ; then
-            comp0=$( echo $remote_os_release | $_sed 's;.*;\L&;' )
-            comp1=$( echo $os_release | $_sed 's;.*;\L&;' )
-            if [ "$comp0" == "$comp1" ] ; then
-                release_color="\e[1;32m"
-            else
-                release_color="\e[1;31m"
-            fi
-        fi
-        if [ -n "$os_codename" ] ; then
-            comp0=$( echo $remote_os_codename | $_sed 's;.*;\L&;' )
-            comp1=$( echo $os_codename | $_sed 's;.*;\L&;' )
-            if [ "$comp0" == "($comp1)" ] ; then
-                codename_color="\e[1;32m"
-            else
-                codename_color="\e[1;31m"
-            fi
-        fi
-        printf "  $distro_color$remote_os_distro\e[0;39m"
-        printf " $os_color$remote_os_name\e[0;39m"
-        printf " $release_color$remote_os_release\e[0;39m"
-        printf " $codename_color$remote_os_codename\n\e[0;39m"
-        answer1=$( $_ssh $1 $_ip $ipprot address show eth0 | $_grep inet)
-        printf "\e[0;32m$answer1\n\e[0;39m"
-    fi
-}
-
-noop()
-{
-    echo -n ""
 }
 
 # gets filled in get_nodes
