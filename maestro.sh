@@ -962,6 +962,119 @@ process_nodes()
     done
 }
 
+re_merge_custom()
+{
+    #better safe than sorry
+    [ -n "$1" ] || error "ERROR: Source directory was empty!"
+    [ "${1/*$n*/XXX}" == "XXX" ] || error "ERROR: Source directory was $1"
+
+    for m in ${!remergecustomsrc[@]} ; do
+
+        if [ -e "$1/${remergecustomsrc[$m]}" ] ; then
+
+            $_mkdir -p ${remergecustomdest[$m]%/*}
+            $_cp $1/${remergecustomsrc[$m]} ${remergecustomdest[$m]}
+        fi
+    done
+}
+
+re_merge_fix_in()
+{
+    #better safe than sorry
+    [ -n "$1" ] || error "ERROR: Source directory was empty!"
+    [ "${1/*$n*/XXX}" == "XXX" ] || error "ERROR: Source directory was $1"
+# TODO maybe we want to ask for what to do with links..
+    for f in $($_find $1 -type f) ; do
+        basename=$($_basename $f)
+        fullpath=${f%%$basename}
+        targetpath=${fullpath/$1}
+        suffix=$(echo $basename | $_grep '\w\.' | $_sed 's/.*\.//')
+        prefix=${basename/.$suffix}
+        [ -n "$suffix" ] && suffix=".$suffix"
+        $_mv $f $workdir/$targetpath/${prefix}.${n}$suffix
+    done
+}
+
+re_merge_fix_pre()
+{
+    #better safe than sorry
+    [ -n "$1" ] || error "ERROR: Source directory was empty!"
+    [ "${1/*$n*/XXX}" == "XXX" ] || error "ERROR: Source directory was $1"
+# TODO maybe we want to ask for what to do with links..
+    for f in $($_find $1 -type f) ; do
+        basename=$($_basename $f)
+        fullpath=${f%%$basename}
+        targetpath=${fullpath/$1}
+        $_mv $f $workdir/$targetpath/${n}.${basename}
+    done
+}
+
+re_merge_fix_post()
+{
+    #better safe than sorry
+    [ -n "$1" ] || error "ERROR: Source directory was empty!"
+    [ "${1/*$n*/XXX}" == "XXX" ] || error "ERROR: Source directory was $1"
+# TODO maybe we want to ask for what to do with links..
+    for f in $($_find $1 -type f) ; do
+        basename=$($_basename $f)
+        fullpath=${f%%$basename}
+        targetpath=${fullpath/$1}
+        $_mv $f $workdir/$targetpath/${basename}.${in}
+    done
+}
+
+re_merge_exceptions_first()
+{
+    for f in ${remergedirect[@]} ; do
+        $_mv $2/$1/$f $2/$f
+    done
+}
+
+merge_all()
+{
+    if [ ! -d "$workdir" ] ; then
+        die "Target directory '$workdir' does not exist!"
+    fi
+    src_subdir=""
+    trgt_subdir=""
+    if [ -n "$merge_only_this_subdir" ] ; then
+        src="$merge_only_this_subdir"
+        trgt="$merge_only_this_subdir"
+    fi
+    case "$merge_mode" in
+        dir|in|post|pre|custom)
+            for d in ${storagedirs[@]} ; do
+                do_sync "$d/$src/" "$workdir/$n/$trgt/"
+            done
+        ;;&
+        dir)
+        ;;
+        in|post|pre)
+            t="$workdir/$n/"
+            for d in $($_find $t -type d) ; do
+                $_mkdir -p $workdir/${d/$t/}
+            done
+            re_merge_exceptions_first $n $workdir
+            re_merge_fix_$merge_mode $t
+
+            t="${t}*"
+# TODO maybe we want to ask for what to do with links..
+            for f in $($_find $t -type l) ; do
+                $_rm $f
+            done
+            for d in $($_find $t -depth -type d) ; do
+                $_rmdir ${d}
+            done
+        ;;
+        custom)
+            re_merge_custom $workdir/$n/
+        ;;
+        *)
+            die "merge mode '$merge_mode' is not supported.."
+        ;;
+    esac
+}
+
 # gets filled in get_nodes
 nodes=()
 
