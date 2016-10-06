@@ -1080,10 +1080,135 @@ nodes=()
 
 #* actions:
 case $1 in
-#
-#
+    ansible-fetch*|ansible-put*|ansible-play*|play|put|fetch)
+        get_nodes
+        [ -n "$_ansible" ] || error "Missing system tool: ansible."
+        [ -n "$_ansible_playbook" ] ||
+                        error "Missing system tool: ansible-playbook."
 
+        # check for some connection settings in config or for -k option
+        process_nodes ansible_connection_test ${nodes[@]}
+        if [ -n "$nodefilter" ] && [ -n "${nodefilter//*\.*/}" ] ; then
+            nodefilter="${nodefilter}*"
+        fi
+        if [ -n "$classfilter" ] && [ -n "$nodefilter" ] ; then
+            hostpattern="$classfilter,$nodefilter"
+        elif [ -n "$classfilter" ] ; then
+            hostpattern="$classfilter"
+        elif [ -n "$nodefilter" ] ; then
+            hostpattern="$nodefilter"
+        else
+            error "No class or node was specified.."
+        fi
+        for d in ${!localdirs[@]} ; do
+            ansibleextravars="$ansibleextravars $d=${localdirs[$d]}"
+        done
+    ;;&
+#*  ansible-fetch src dest [flat]   ansible oversimplified fetch module
+#*                                  wrapper (prefer ansible-play instead)
+#*                                  'src' is /path/file on remote host
+#*                                  'dest' is /path/ on local side
+#*                                  without 'flat' hostname is namespace
+#*                                  else use 'flat' instead of hostname
+#*                                  for destination path which looks like
+#*                                  localhost:/localpath/namespace/path/file
+    ansible-fetch|fetch)
 
+        src=$2
+        dest=$3
+
+        flat=""
+        if [ -n "$4" ] ; then
+
+            dest=$dest/$4/$src
+            flat="flat=true"
+        fi
+
+        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e '$ansibleextravars'} $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
+        if [ 0 -ne "$force" ] ; then
+            echo "Press <Enter> to continue <Ctrl-C> to quit"
+            read
+        fi
+        $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
+    ;;
+#*  ansible-plays-list (apls)       list all available plays (see 'playbookdir'
+#*                                  in your config.
+    ansible-plays-list|apls|pls)
+    foundplays=( $($_find $playbookdir -maxdepth 1 -name "*.yml" | $_sort -u) )
+    for p in ${foundplays[@]} ; do
+        o=${p%.yml}
+        printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
+        $_grep "^#\* " $p | $_sed 's;^#\*;  ;'
+        printf "\e[0;39m"
+    done
+    ;;
+#*  ansible-play (play) play        wrapper to ansible which also includes
+#*                                  custom plays stored in the config
+#*                                  file as '$playbookdir'.
+#*                                  'play' name of the play
+    ansible-play*|play)
+        p="$($_find $playbookdir -maxdepth 1 -name ${2}.yml)"
+        [ -n "$p" ] ||
+            error "There is no play called ${2}.yml in $playbookdir"
+        echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass ${ansible_root:+-b -K} -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
+        if [ 0 -ne "$force" ] ; then
+            echo "Press <Enter> to continue <Ctrl-C> to quit"
+            read
+        fi
+        $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass ${ansible_root:+-b -K} -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $p
+    ;;
+#*  ansible-put src dest            ansible oversimplified copy module wrapper
+#*                                  (prefer ansible-play instead)
+#*                                  'src' is /path/file on local host
+#*                                  'dest' is /path/.. on remote host
+    ansible-put|put)
+
+        src=$2
+        dest=$3
+
+        owner="" ; [ -z "$4" ] || owner="owner=$4"
+        mode="" ; [ -z "$5" ] || mode="mode=$5"
+
+        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e '$ansibleextravars'} $ansibleoptions -m copy -a 'src=$src dest=$dest' $owner $mode"
+        if [ 0 -ne "$force" ] ; then
+            echo "Press <Enter> to continue <Ctrl-C> to quit"
+            read
+        fi
+        $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions -m copy -a "src=$src dest=$dest" $owner $mode
+    ;;
+    *)
+        if [ -n "$classfilter" ] ; then
+            process_nodes process_classes ${nodes[@]}
+            nodes=()
+            for a in ${classes_dict[$classfilter]//:/ } ; do
+                nodes=( ${nodes[@]} $a )
+            done
+        fi
+    ;;&
+#*  applications-list (als)         list hosts sorted by applications
+    als|app*)
+        get_nodes
+        process_nodes process_applications ${nodes[@]}
+        for a in $( echo ${!applications_dict[@]} | $_tr " " "\n" | $_sort ) ; do
+            printf "\e[1;34m[$a]\n"
+            for h in $(echo -e ${applications_dict[$a]//:/ \\n} | $_sort -u); do
+                printf "\e[0;32m$h\n"
+            done
+        done
+        printf "\e[0;39m"
+    ;;
+#*  classes-list (cls)              list hosts sorted by class
+    cls|class*)
+        get_nodes
+        process_nodes process_classes ${nodes[@]}
+        for a in $( echo ${!classes_dict[@]} | $_tr " " "\n" | $_sort ) ; do
+            printf "\e[1;35m[$a]\n"
+            for h in $( echo -e ${classes_dict[$a]//:/ \\n} | $_sort -u ) ; do
+                printf "\e[0;32m$h\n"
+            done
+        done
+        printf "\e[0;39m"
+    ;;
 #*  init [directory]                create an environemnt with all the
 #*                                  repos defined in the config, in order
 #*                                  to get a running knowledge base.
