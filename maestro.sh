@@ -700,6 +700,60 @@ process_nodes()
     done
 }
 
+connect_node()
+{
+    list_node $n
+    retval=0
+    remote_os=( $( $_ssh $1 $_lsb_release -d 2>/dev/null) ) || retval=$?
+    remote_os_distro=${remote_os[1]}
+    remote_os_name=${remote_os[2]}
+    remote_os_release=${remote_os[3]}
+    remote_os_codename=${remote_os[4]}
+    answer0="${remote_os[1]} ${remote_os[2]} ${remote_os[3]} ${remote_os[4]}"
+    if [ $retval -gt 127 ] ; then
+        printf " \e[1;31m${answer0}\n"
+    elif [ $retval -gt 0 ] ; then
+        printf " \e[1;33m${answer0}\n"
+    else
+        distro_color="\e[0;32m"
+        os_color="\e[0;32m"
+        release_color="\e[0;32m"
+        codename_color="\e[0;32m"
+        if [ -n "$os_distro" ] ; then
+            comp0=$( echo $remote_os_distro | $_sed 's;.*;\L&;' )
+            comp1=$( echo $os_distro | $_sed 's;.*;\L&;' )
+            if [ "$comp0" == "$comp1" ] ; then
+                distro_color="\e[1;32m"
+            else
+                distro_color="\e[1;31m"
+            fi
+        fi
+        if [ -n "$os_release" ] ; then
+            comp0=$( echo $remote_os_release | $_sed 's;.*;\L&;' )
+            comp1=$( echo $os_release | $_sed 's;.*;\L&;' )
+            if [ "$comp0" == "$comp1" ] ; then
+                release_color="\e[1;32m"
+            else
+                release_color="\e[1;31m"
+            fi
+        fi
+        if [ -n "$os_codename" ] ; then
+            comp0=$( echo $remote_os_codename | $_sed 's;.*;\L&;' )
+            comp1=$( echo $os_codename | $_sed 's;.*;\L&;' )
+            if [ "$comp0" == "($comp1)" ] ; then
+                codename_color="\e[1;32m"
+            else
+                codename_color="\e[1;31m"
+            fi
+        fi
+        printf "  $distro_color$remote_os_distro\e[0;39m"
+        printf " $os_color$remote_os_name\e[0;39m"
+        printf " $release_color$remote_os_release\e[0;39m"
+        printf " $codename_color$remote_os_codename\n\e[0;39m"
+        answer1=$( $_ssh $1 $_ip $ipprot address show eth0 | $_grep inet)
+        printf "\e[0;32m$answer1\n\e[0;39m"
+    fi
+}
 
 noop()
 {
