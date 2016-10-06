@@ -34,7 +34,6 @@ declare -A toclone
 # important directories
 declare -A inventorydirs
 declare -A playbookdirs
-declare -A storagedirs
 declare -A localdirs
 
 ### you may copy the following variables into this file for having your own
@@ -72,13 +71,9 @@ playbookdirs=(
     ["common_playbooks"]=""
 )
 
-# the plain config files, either as a source or target (or both)
-storagedirs=(
-    ["any_confix"]=""
-)
-
 # further directories/repos that can be used
 localdirs=(
+    ["any_confix"]=""
     ["packer_templates"]=""
     ["vagrant_boxes"]=""
 )
@@ -737,10 +732,6 @@ case $1 in
                 git_dest="${inventorydirs[$g]}"
             elif [ -n "${playbookdirs[$g]}" ] ; then
                 git_dest="${playbookdirs[$g]}"
-
-            elif [ -n "${storagedirs[$g]}" ] ; then
-                git_dest="${storagedirs[$g]}"
-
             elif [ -n "${localdirs[$g]}" ] ; then
                 git_dest="${localdirs[$g]}"
             else
@@ -748,9 +739,11 @@ case $1 in
                       "in your config for $g"
             fi
             if [ -d "$git_dest/.git" ] ; then
+                echo "update repository $g"
                 $_git -C "$git_dest" pull
             else
                 $_mkdir -p $git_dest
+                [ -n "${toclone[$g]}" ] || continue
                 $_git clone "${toclone[$g]}" "$git_dest"
             fi
         done
