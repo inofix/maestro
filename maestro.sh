@@ -684,6 +684,30 @@ get_nodes()
             $_tr -d ":" | $_sort -r ) )
 }
 
+process_nodes()
+{
+    command=$1
+    shift
+    for n in $@ ; do
+        if [ -n "$nodefilter" ] && [ "$nodefilter" != "$n" ] &&
+                [ "$nodefilter" != "${n%%.*}" ]  ; then
+            continue
+        fi
+        hostname="${n%%.*}"
+        domainname="${n#*.}"
+        parse_node $n
+        $command $n
+    done
+}
+
+
+noop()
+{
+    echo -n ""
+}
+
+
+
 #* actions:
 case $1 in
 #
