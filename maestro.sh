@@ -665,7 +665,7 @@ parse_node()
     fi
 }
 
-nodes=()
+# First call to reclass to get an overview of the hosts available
 get_nodes()
 {
     [ -d "$inventorydir/nodes" ] || error "reclass environment not found at $inventorydir/nodes"
@@ -684,6 +684,142 @@ get_nodes()
             $_tr -d ":" | $_sort -r ) )
 }
 
+# List all applications for all hosts
+list_applications()
+{
+    list_node $n
+    for a in ${applications[@]} ; do
+        printf "\e[0;36m - $a\n"
+    done
+    printf "\e[0;39m"
+}
+
+# List all classes for all hosts
+list_classes()
+{
+    list_node $n
+    for c in ${classes[@]} ; do
+        printf "\e[0;35m - $c\n"
+    done
+    printf "\e[0;39m"
+}
+
+# Print out info about a host
+list_node()
+{
+    output="\e[1;39m$n \e[1;36m($environement:$project)"
+    if [ "$role" == "development" ] ; then
+         output="$output \e[1;32m$role"
+    elif [ "$role" == "fallback" ] ; then
+         output="$output \e[1;33m$role"
+    elif [ "$role" == "productive" ] ; then
+         output="$output \e[1;31m$role"
+    else
+         output="$output \e[1;39m$role"
+    fi
+    if [ -n "$os_distro" ] && [ -n "$os_codename" ] &&
+            [ -n "$os_release" ] ; then
+        os_output="\e[1;34m($os_distro-$os_codename $os_release)"
+    elif [ -n "$os_distro" ] && [ -n "$os_codename" ] ; then
+        os_output="\e[1;34m($os_distro-$os_codename)"
+    elif [ -n "$os_distro" ] && [ -n "$os_release" ] ; then
+        os_output="\e[1;34m($os_distro $os_release)"
+    fi
+    output="$output $os_output"
+    printf "$output\e[0;39m\n"
+}
+
+# Print out info about a host - the short form
+list_node_short()
+{
+    printf "$n\n"
+}
+
+# List all the storage (config) directories) per host
+list_node_stores()
+{
+    list_node $n
+    list_node_arrays ${storagedirs[@]}
+}
+
+# List the merge mappings
+list_node_re_merge_exceptions()
+{
+    list_node $n
+    list_node_arrays ${remergedirect[@]}
+}
+
+# List the merge mappings
+list_node_re_merge_custom()
+{
+    list_node $n
+    list_re_merge_custom
+}
+
+# List meta info about the hosts type and location
+list_node_type()
+{
+    list_node $n
+    printf "\e[0;33m This host is a \e[1;33m${hosttype}\e[0;33m.\n"
+    [ -n "$hostinfrastructure" ] &&
+        printf " It is running on \e[1;33m${hostinfrastructure}\e[0;33m.\n" ||
+        true
+    [ -n "$hostlocation" ] &&
+        printf " The ${hosttype} is located at "
+        printf "\e[1;33m$hostlocation\e[0;33m.\n" ||
+        true
+}
+
+# List the merge mappings
+list_re_merge_custom()
+{
+    for m in ${!remergecustomsrc[@]} ; do
+        printf "\e[1;33m - $m\n"
+        printf "\e[0;33m   file: \e[0;35m${remergecustomsrc[$m]}\n"
+        printf "\e[0;33m   dest: \e[0;36m${remergecustomdest[$m]}\n"
+    done
+    printf "\e[0;39m"
+}
+
+# List directories
+list_node_arrays()
+{
+    for d in $@ ; do
+        if [ -d "$d" ] ; then
+            printf "\e[0;32m - $d\n"
+        else
+            printf "\e[0;33m ! $d \n"
+        fi
+    done
+}
+
+# Gather application info for a host
+declare -A applications_dict
+process_applications()
+{
+    for a in ${applications[@]} ; do
+        applications_dict[$a]=$n:${applications_dict[$a]}
+    done
+}
+
+# Gather class info for a node
+declare -A classes_dict
+process_classes()
+{
+    for c in ${classes[@]} ; do
+        classes_dict[$c]=$n:${classes_dict[$c]}
+    done
+}
+
+do_sync()
+{
+    if [ -d "$1" ] ; then
+        $_mkdir -p $2
+        $_rsync $rsync_options $1 $2
+    fi
+}
+
+# Collect all the info about a host
 process_nodes()
 {
     command=$1
@@ -700,6 +836,7 @@ process_nodes()
     done
 }
 
+# Try to connect to a host an compare some metadata to facts
 connect_node()
 {
     list_node $n
@@ -760,7 +897,8 @@ noop()
     echo -n ""
 }
 
-
+# gets filled in get_nodes
+nodes=()
 
 #* actions:
 case $1 in
@@ -819,6 +957,11 @@ EOF
             echo "  storage_type: yaml_fs"
             echo "  inventory_base_uri: $inventorydir"
         fi
+    ;;
+#*  list (ls)                       list nodes
+    ls|list*)
+        get_nodes
+        process_nodes list_node ${nodes[@]}
     ;;
 ##*  re-merge                        remerge as specified in '--merge mode'
 #    rem|re-merge*)
@@ -893,6 +1036,11 @@ EOF
         for d in ${!localdirs[@]} ; do
             printf "  $d: ${localdirs[$d]}\n"
         done
+    ;;
+#*  status (ss)                     test host by ssh and print distro and ip(s)
+    ss|status)
+        get_nodes
+        process_nodes connect_node ${nodes[@]}
     ;;
     *)
         print_usage
