@@ -793,6 +793,36 @@ case $1 in
         fi
     ;;
 #*  show-reclass-summary            show variables used in reclass that are
+#*                                  interpreted here
+    show-rec*)
+        printf "The following variables can be used in reclass and will\n"
+        printf "be interpreted (and potentially used) by this script.\n"
+        printf "\n"
+        printf "\e[1mNote:\e[0m Of course you can use other variables as well,\n"
+        printf "this is just a list of what $0\n"
+        printf "is directly aware of.\n"
+        printf "\n"
+        printf " \e[1mType                   Variable\e[0m\n"
+        $_grep "^#\*\*\* " $0 | $_sed_forced 's;^#\*\*\*;;'
+        printf "\n"
+        printf "Furthermore these variables are needed in $conffile\n"
+        printf " Where to search for reclass:         inventorydir\n"
+        printf " Where to put (temp.) results:        workdir\n"
+        printf " Local directories to replace:        localdirs\n"
+        printf " Ansible playbooks:                   playbookdir\n"
+        printf "\n"
+        printf "Currently these contain the following values:\n"
+        printf " 'inventorydir':    $inventorydir\n"
+        printf " 'workdir':         $workdir\n"
+        printf " 'playbookdir':       $playbookdir\n"
+        printf "\n"
+        printf " The above 'localdirs' can be used in reclass like any other\n"
+        printf " external variable, i.e. '{{ name }}'. Currently these names\n"
+        printf " are used in your config:\n"
+        for d in ${!localdirs[@]} ; do
+            printf "  $d: ${localdirs[$d]}\n"
+        done
+    ;;
     *)
         print_usage
     ;;
