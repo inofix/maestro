@@ -761,6 +761,38 @@ case $1 in
             $_find "$d/classes/" -mindepth 1 -maxdepth 1 -name "*.yml" -exec $_ln -s \{} $inventorydir/classes/ \;
         done
     ;;
+##*  re-merge                        remerge as specified in '--merge mode'
+#    rem|re-merge*)
+#        process_nodes re-merge ${nodes[@]}
+#    ;;
+#*  reclass                         just wrap reclass
+    rec*)
+        if [ -n "$nodefilter" ] ; then
+            nodefilter=$($_find -L $inventorydir/nodes/ -name "$nodefilter" -o -name "${nodefilter}\.*" | $_sed -e 's;.yml;;' -e 's;.*/;;')
+
+            if [ -n "$nodefilter" ] ; then
+                reclassmode="-n $nodefilter"
+            else
+                error "The node does not seem to exist: $nodefilter"
+            fi
+        else
+            reclassmode="-i"
+        fi
+        if [ -n "$projectfilter" ] ; then
+            nodes_uri="$inventorydir/nodes/$projectfilter"
+            if [ ! -d "$nodes_uri" ] ; then
+                error "No such project dir: $nodes_uri"
+            fi
+        elif [ -n "$classfilter" ] ; then
+            error "Classes are not supported here, use project filter instead."
+        fi
+        if [ -z "$nodes_uri" ] ; then
+            $_reclass -b $inventorydir $nodes_uri $reclassmode
+        else
+            $_reclass -b $inventorydir -u $nodes_uri $reclassmode
+        fi
+    ;;
+#*  show-reclass-summary            show variables used in reclass that are
     *)
         print_usage
     ;;
