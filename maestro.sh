@@ -665,39 +665,6 @@ parse_node()
     fi
 }
 
-init()
-{
-    cdir="$1"
-    f="$2"
-    [ -f "$cdir/hosts" ] && error "a file '$cdir/hosts' already exists, please remove manually first.."
-    [ -f "$cdir/reclass-config.yml" ] && error "a file '$cdir/reclass-config.yml' already exists, please remove manually first.."
-    [ -d "$cdir/reclass-env" ] && error "a directory '$cdir/reclass-env' already exists, please remove manually first.."
-    $_ln -s $ansible_connect "$cdir/hosts"
-    if [ -z "$_pre" ] ; then
-        $_cat > "$cdir/reclass-config.yml" << EOF
-storage_type: yaml_fs
-inventory_base_uri: $cdir/reclass-env
-EOF
-    else
-        echo "write config file $cdir/reclass-config.yml"
-        echo "  storage_type: yaml_fs"
-        echo "  inventory_base_uri: $cdir/reclass-env"
-    fi
-    $_mkdir -p "$cdir/reclass-env/nodes" "$cdir/reclass-env/classes"
-    if [ -z "$f" ] ; then
-        l="$_ln -s"
-    else
-        l="$_cp -r"
-    fi
-    $l $inventorydir/classes/* "$cdir/reclass-env/classes/"
-    if [ -z "$projectfilter" ] ; then
-        $l $inventorydir/nodes/* "$cdir/reclass-env/nodes/"
-    else
-        $l $inventorydir/nodes/$projectfilter "$cdir/reclass-env/nodes/"
-    fi
-}
-
-
 nodes=()
 get_nodes()
 {
@@ -760,6 +727,20 @@ case $1 in
             $_find "$d/classes/" -mindepth 1 -maxdepth 1 -type d -exec $_ln -s \{} $inventorydir/classes/ \;
             $_find "$d/classes/" -mindepth 1 -maxdepth 1 -name "*.yml" -exec $_ln -s \{} $inventorydir/classes/ \;
         done
+        echo "Re-connect ansible to our reclass inventory"
+        [ ! -f "$inventorydir/hosts" ] || $_rm "$inventorydir/hosts"
+        [ ! -f "$inventorydir/reclass-config.yml" ] || $_rm "$inventorydir/reclass-config.yml"
+        $_ln -s $ansible_connect "$inventorydir/hosts"
+        if [ -z "$_pre" ] ; then
+            $_cat > "$inventorydir/reclass-config.yml" << EOF
+storage_type: yaml_fs
+inventory_base_uri: $inventorydir
+EOF
+        else
+            echo "write config file $inventorydir/reclass-config.yml"
+            echo "  storage_type: yaml_fs"
+            echo "  inventory_base_uri: $inventorydir"
+        fi
     ;;
 ##*  re-merge                        remerge as specified in '--merge mode'
 #    rem|re-merge*)
