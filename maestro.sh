@@ -1261,11 +1261,92 @@ EOF
             echo "  inventory_base_uri: $inventorydir"
         fi
     ;;
+#*  shortlist (l)                   list nodes - but just the hostname
+    l|shortlist)
+        get_nodes
+        process_nodes list_node_short ${nodes[@]}
+    ;;
 #*  list (ls)                       list nodes
     ls|list*)
         get_nodes
         process_nodes list_node ${nodes[@]}
     ;;
+#*  list-applications (lsa)         list applications sorted by hosts
+    lsa|list-a*)
+        get_nodes
+        process_nodes list_applications ${nodes[@]}
+    ;;
+#*  list-classes (lsc)              list classes sorted by hosts
+    lsc|list-c*)
+        get_nodes
+        process_nodes list_classes ${nodes[@]}
+    ;;
+#*  list-debops-inventory           list the ansible inventory of debops hosts
+    lsd|list-debops-inventory)
+        get_nodes
+        process_nodes list_debops ${nodes[@]}
+    ;;
+#*  list-distro-packages            list app package names for the hosts distro
+    lsp|list-distro-packages)
+        get_nodes
+        process_nodes list_distro_packages ${nodes[@]}
+    ;;
+#*  list-merge-customs (lsmc)       show custom merge rules
+    lsmc|list-merge-c*)
+        get_nodes
+        process_nodes list_node_re_merge_custom ${nodes[@]}
+    ;;
+#*  list-merge-exceptions (lsme)    show exceptions for merge modes
+    lsme|list-merge-e*)
+        get_nodes
+        process_nodes list_node_re_merge_exceptions ${nodes[@]}
+    ;;
+#*  list-storage (lss)              show storage directories
+    lss|list-storage)
+        get_nodes
+        process_nodes list_node_stores ${nodes[@]}
+    ;;
+#*  list-types (lst)                show maschine type and location
+    lst|list-types)
+        get_nodes
+        process_nodes list_node_type ${nodes[@]}
+    ;;
+#*  merge-all (mg)                  just merge all storage directories - flat
+#*                                  to $workdir
+    merge|merge-a*|mg)
+        get_nodes
+        process_nodes merge_all ${nodes[@]}
+    ;;
+#*  merge-custom (mc)               merge after custom rules defined in reclass
+#*                                  in $workdir, then move to the destination
+#*                                  as specified
+    merge-cu*|mc)
+        get_nodes
+        merge_mode="custom"
+        process_nodes merge_all ${nodes[@]}
+    ;;
+#*  merge-pre (mpr)                 merge storage dirs and prefix with hostname
+#*                                  to $workdir
+    merge-pr*|mpr)
+        get_nodes
+        merge_mode="pre"
+        process_nodes merge_all ${nodes[@]}
+    ;;
+#*  merge-in (mi)                   merge storage dirs and infix with hostname
+#*                                  to $workdir
+    merge-i*|mi)
+        get_nodes
+        merge_mode="in"
+        process_nodes merge_all ${nodes[@]}
+    ;;
+#*  merge-post (mpo)                merge storage dirs and postfix with hostname
+#*                                  to $workdir
+    merge-po*|mpo)
+        get_nodes
+        merge_mode="post"
+        process_nodes merge_all ${nodes[@]}
+    ;;
+
 ##*  re-merge                        remerge as specified in '--merge mode'
 #    rem|re-merge*)
 #        process_nodes re-merge ${nodes[@]}
