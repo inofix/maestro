@@ -27,7 +27,6 @@
 [ "$1" == "debug" ] && shift && set -x
 
 ## variables ##
-maestrodir="$PWD"
 
 # get these repos
 declare -A toclone
@@ -58,7 +57,7 @@ merge_only_this_subdir=""
 merge_mode="dir"
 
 # maestro's git repo
-maestrodir=""
+maestrodir="$PWD"
 
 # usually the local dir
 workdir="./workdir"
@@ -112,6 +111,7 @@ sys_tools=( ["_awk"]="/usr/bin/gawk"
             ["_cp"]="/bin/cp"
             ["_dirname"]="/usr/bin/dirname"
             ["_find"]="/usr/bin/find"
+            ["_git"]="/usr/bin/git"
             ["_grep"]="/bin/grep"
             ["_id"]="/usr/bin/id"
             ["_ip"]="/bin/ip"
@@ -699,30 +699,64 @@ EOF
     fi
 }
 
-#[ -d "$inventorydir/nodes" ] || error "reclass environment not found at $inventorydir/nodes"
-#reclass_filter=""
-#if [ -n "$projectfilter" ] ; then
-#    if [ -d "$inventorydir/nodes/$projectfilter" ] ; then
-#        reclass_filter="-u nodes/$projectfilter"
-#    else
-#        die "This project does not exist in $inventorydir"
-#    fi
-#fi
-#nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
-#            $_awk 'BEGIN {node=1}; \
-#                   /^nodes:/ {node=0};\
-#                   /^  \w/ {if (node == 0) {print now $0}}' |\
-#            $_tr -d ":" | $_sort -r ) )
+
+nodes=()
+get_nodes()
+{
+    [ -d "$inventorydir/nodes" ] || error "reclass environment not found at $inventorydir/nodes"
+    reclass_filter=""
+    if [ -n "$projectfilter" ] ; then
+        if [ -d "$inventorydir/nodes/$projectfilter" ] ; then
+            reclass_filter="-u nodes/$projectfilter"
+        else
+            die "This project does not exist in $inventorydir"
+        fi
+    fi
+    nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
+            $_awk 'BEGIN {node=1}; \
+                   /^nodes:/ {node=0};\
+                   /^  \w/ {if (node == 0) {print now $0}}' |\
+            $_tr -d ":" | $_sort -r ) )
+}
 
 #* actions:
 case $1 in
+#
+#
+
+
 #*  init [directory]                create an environemnt with all the
 #*                                  repos defined in the config, in order
 #*                                  to get a running knowledge base.
-    init)
+    init|reinit)
         shift
         [ -f "$conffile" ] || error "Please provide a config file."
+        for g in ${!toclone[@]} ; do
+            git_dest=""
+            if [ -n "${inventorydirs[$g]}" ] ; then
+                git_dest="${inventorydirs[$g]}"
+            elif [ -n "${playbookdirs[$g]}" ] ; then
+                git_dest="${playbookdirs[$g]}"
+
+            elif [ -n "${storagedirs[$g]}" ] ; then
+                git_dest="${storagedirs[$g]}"
+
+            elif [ -n "${localdirs[$g]}" ] ; then
+                git_dest="${localdirs[$g]}"
+            else
+                error "there is no corresponding directory defined" \
+                      "in your config for $g"
+            fi
+            if [ -d "$git_dest/.git" ] ; then
+                $_git -C "$git_dest" pull
+            else
+                $_mkdir -p $git_dest
+                $_git clone "${toclone[$g]}" "$git_dest"
+            fi
+        done
+    ;;
+    *)
+        print_usage
     ;;
 esac
 
-exit 0
