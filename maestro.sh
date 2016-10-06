@@ -806,17 +806,29 @@ case $1 in
         $_grep "^#\*\*\* " $0 | $_sed_forced 's;^#\*\*\*;;'
         printf "\n"
         printf "Furthermore these variables are needed in $conffile\n"
-        printf " Where to search for reclass:         inventorydir\n"
+        printf " Where to search for reclass:         inventorydirs (merged to inventorydir)\n"
         printf " Where to put (temp.) results:        workdir\n"
         printf " Local directories to replace:        localdirs\n"
-        printf " Ansible playbooks:                   playbookdir\n"
+        printf " Ansible playbooks:                   playbookdirs\n"
         printf "\n"
         printf "Currently these contain the following values:\n"
         printf " 'inventorydir':    $inventorydir\n"
         printf " 'workdir':         $workdir\n"
-        printf " 'playbookdir':       $playbookdir\n"
         printf "\n"
-        printf " The above 'localdirs' can be used in reclass like any other\n"
+        printf " The 'inventorydirs' (see above) gets internally merged to 'inventorydir'\n"
+        printf " and is used as the input to reclass. Currently these sources\n"
+        printf " are used in your config:\n"
+        for d in ${!inventorydirs[@]} ; do
+            printf "  $d: ${inventorydirs[$d]}\n"
+        done
+        printf "\n"
+        printf " The 'playbookdirs' (see above) are used as a source for ansible playbooks.\n"
+        printf " Currently these sources are used in your config:\n"
+        for d in ${!playbookdirs[@]} ; do
+            printf "  $d: ${playbookdirs[$d]}\n"
+        done
+        printf "\n"
+        printf " The 'localdirs' (see above) can be used in reclass like any other\n"
         printf " external variable, i.e. '{{ name }}'. Currently these names\n"
         printf " are used in your config:\n"
         for d in ${!localdirs[@]} ; do
