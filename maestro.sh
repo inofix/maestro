@@ -66,6 +66,9 @@ inventorydirs=(
     ["main"]="./inventory"
 )
 
+# the merge of the above inventories will be stored here
+inventorydir="$maestrodir/.inventory"
+
 # ansible/debops instructions
 playbookdirs=(
     ["common_playbooks"]=""
@@ -746,6 +749,16 @@ case $1 in
                 [ -n "${toclone[$g]}" ] || continue
                 $_git clone "${toclone[$g]}" "$git_dest"
             fi
+        done
+        echo "Re-create the inventory. Note: there will be warnings for duplicates"
+        echo "etc. "
+        $_mkdir -p $inventorydir/{nodes,classes}
+        $_rm -f $inventorydir/{nodes,classes}/*
+        for d in ${inventorydirs[@]} ; do
+            $_find "$d/nodes/" -mindepth 1 -maxdepth 1 -type d -exec $_ln -s \{} $inventorydir/nodes/ \;
+            $_find "$d/nodes/" -mindepth 1 -maxdepth 1 -name "*.yml" -exec $_ln -s \{} $inventorydir/nodes/ \;
+            $_find "$d/classes/" -mindepth 1 -maxdepth 1 -type d -exec $_ln -s \{} $inventorydir/classes/ \;
+            $_find "$d/classes/" -mindepth 1 -maxdepth 1 -name "*.yml" -exec $_ln -s \{} $inventorydir/classes/ \;
         done
     ;;
     *)
