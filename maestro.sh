@@ -1367,9 +1367,8 @@ EOF
             $_reclass -b $inventorydir -u $nodes_uri $reclassmode
         fi
     ;;
-#*  show-reclass-summary            show variables used in reclass that are
-#*                                  interpreted here
-    show-rec*)
+#*  show-summary                    show variables used here from the config and reclass
+    show-sum*)
         printf "The following variables can be used in reclass and will\n"
         printf "be interpreted (and potentially used) by this script.\n"
         printf "\n"
