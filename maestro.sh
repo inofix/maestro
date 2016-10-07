@@ -104,6 +104,8 @@ ansible_verbose=""
 # The system tools we gladly use. Thank you!
 declare -A sys_tools
 sys_tools=(
+            ["_ansible"]="/usr/bin/ansible"
+            ["_ansible_playbook"]="/usr/bin/ansible-playbook"
             ["_awk"]="/usr/bin/gawk"
             ["_basename"]="/usr/bin/basename"
             ["_cat"]="/bin/cat"
@@ -131,17 +133,22 @@ sys_tools=(
             ["_wc"]="/usr/bin/wc"
 )
 # this tools get disabled in dry-run and sudo-ed for needsroot
-danger_tools=( "_cp" "_cat" "_dd" "_ln" "_mkdir" "_mv"
-               "_rm" "_rmdir" "_rsync" "_sed" )
+danger_tools=(
+            "_ansible"
+            "_ansible_playbook"
+            "_cp"
+            "_cat"
+            "_dd"
+            "_ln"
+            "_mkdir"
+            "_mv"
+            "_rm"
+            "_rmdir"
+            "_rsync"
+            "_sed"
+)
 # special case sudo (not mandatory)
 _sudo="/usr/bin/sudo"
-
-declare -A opt_sys_tools
-opt_sys_tools=(
-            ["_ansible"]="/usr/bin/ansible"
-            ["_ansible_playbook"]="/usr/bin/ansible-playbook"
-)
-opt_danger_tools=( "_ansible" "_ansible_playbook" )
 
 ## functions ##
 
@@ -182,14 +189,6 @@ for t in ${!sys_tools[@]} ; do
         export ${t}="${sys_tools[$t]}"
     else
         error "Missing system tool: ${sys_tools[$t]##* } must be installed."
-    fi
-done
-
-for t in ${!opt_sys_tools[@]} ; do
-    if [ -x "${opt_sys_tools[$t]##* }" ] ; then
-        export ${t}="${opt_sys_tools[$t]}"
-    else
-        echo "Warning! Missing system tool: ${opt_sys_tools[$t]##* }."
     fi
 done
 
@@ -343,10 +342,6 @@ fi
 
 for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
-done
-
-for t in ${opt_danger_tools[@]} ; do
-    [ -z "${!t}" ] || export ${t}="$_pre ${opt_sys_tools[$t]}"
 done
 
 reclass_parser='BEGIN {
