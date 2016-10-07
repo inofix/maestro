@@ -1146,7 +1146,7 @@ case $1 in
     ansible-play*|play)
         p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${2}.yml)"
         [ -n "$p" ] ||
-            error "There is no play called ${2}.yml in $playbookdir"
+            error "There is no play called ${2}.yml in ${playbookdirs[@]}"
         echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass ${ansible_root:+-b -K} -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
