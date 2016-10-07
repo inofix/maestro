@@ -184,13 +184,18 @@ error()
 ## logic ##
 
 ## first set the system tools
+fail=1
 for t in ${!sys_tools[@]} ; do
     if [ -x "${sys_tools[$t]##* }" ] ; then
         export ${t}="${sys_tools[$t]}"
     else
-        error "Missing system tool: ${sys_tools[$t]##* } must be installed."
+        fail=0
+        echo "Missing system tool: '${sys_tools[$t]##* }' must be installed."
     fi
 done
+if [ $fail -eq 0 ] ; then
+    die "Please install the above mentioned tools first.."
+fi
 
 [ ! -f "/etc/$conffile" ] || . "/etc/$conffile"
 [ ! -f "/usr/etc/$conffile" ] || . "/usr/etc/$conffile"
