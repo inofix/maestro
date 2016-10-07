@@ -1214,6 +1214,7 @@ case $1 in
 #*                                  to get a running knowledge base.
     init|reinit)
         shift
+        $_mkdir -p "$workdir"
         [ -f "$conffile" ] || error "Please provide a config file."
         for g in ${!toclone[@]} ; do
             git_dest=""
