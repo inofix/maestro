@@ -103,7 +103,10 @@ ansible_verbose=""
 
 # The system tools we gladly use. Thank you!
 declare -A sys_tools
-sys_tools=( ["_awk"]="/usr/bin/gawk"
+sys_tools=(
+            ["_ansible"]="/usr/bin/ansible"
+            ["_ansible_playbook"]="/usr/bin/ansible-playbook"
+            ["_awk"]="/usr/bin/gawk"
             ["_basename"]="/usr/bin/basename"
             ["_cat"]="/bin/cat"
             ["_cp"]="/bin/cp"
@@ -127,17 +130,25 @@ sys_tools=( ["_awk"]="/usr/bin/gawk"
             ["_sort"]="/usr/bin/sort"
             ["_ssh"]="/usr/bin/ssh"
             ["_tr"]="/usr/bin/tr"
-            ["_wc"]="/usr/bin/wc" )
+            ["_wc"]="/usr/bin/wc"
+)
 # this tools get disabled in dry-run and sudo-ed for needsroot
-danger_tools=( "_cp" "_cat" "_dd" "_ln" "_mkdir" "_mv"
-               "_rm" "_rmdir" "_rsync" "_sed" )
+danger_tools=(
+            "_ansible"
+            "_ansible_playbook"
+            "_cp"
+            "_cat"
+            "_dd"
+            "_ln"
+            "_mkdir"
+            "_mv"
+            "_rm"
+            "_rmdir"
+            "_rsync"
+            "_sed"
+)
 # special case sudo (not mandatory)
 _sudo="/usr/bin/sudo"
-
-declare -A opt_sys_tools
-opt_sys_tools=( ["_ansible"]="/usr/bin/ansible"
-                ["_ansible_playbook"]="/usr/bin/ansible-playbook" )
-opt_danger_tools=( "_ansible" "_ansible_playbook" )
 
 ## functions ##
 
@@ -173,21 +184,18 @@ error()
 ## logic ##
 
 ## first set the system tools
+fail=1
 for t in ${!sys_tools[@]} ; do
     if [ -x "${sys_tools[$t]##* }" ] ; then
         export ${t}="${sys_tools[$t]}"
     else
-        error "Missing system tool: ${sys_tools[$t]##* } must be installed."
+        fail=0
+        echo "Missing system tool: '${sys_tools[$t]##* }' must be installed."
     fi
 done
-
-for t in ${!opt_sys_tools[@]} ; do
-    if [ -x "${opt_sys_tools[$t]##* }" ] ; then
-        export ${t}="${opt_sys_tools[$t]}"
-    else
-        echo "Warning! Missing system tool: ${opt_sys_tools[$t]##* }."
-    fi
-done
+if [ $fail -eq 0 ] ; then
+    die "Please install the above mentioned tools first.."
+fi
 
 [ ! -f "/etc/$conffile" ] || . "/etc/$conffile"
 [ ! -f "/usr/etc/$conffile" ] || . "/usr/etc/$conffile"
@@ -339,10 +347,6 @@ fi
 
 for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
-done
-
-for t in ${opt_danger_tools[@]} ; do
-    [ -z "${!t}" ] || export ${t}="$_pre ${opt_sys_tools[$t]}"
 done
 
 reclass_parser='BEGIN {
@@ -1142,7 +1146,7 @@ case $1 in
     ansible-play*|play)
         p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${2}.yml)"
         [ -n "$p" ] ||
-            error "There is no play called ${2}.yml in $playbookdir"
+            error "There is no play called ${2}.yml in ${playbookdirs[@]}"
         echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass ${ansible_root:+-b -K} -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
@@ -1409,8 +1413,8 @@ EOF
             printf "  $d: ${localdirs[$d]}\n"
         done
     ;;
-##TODO search searches everywhere. simple, straightforward
-#*  search variable                 show in which file a variable is configured
+#*  search pattern                  show in which file a variable is defined
+#*                                  or used
     search)
         shift
         printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
@@ -1418,15 +1422,7 @@ EOF
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
         $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" -e "{{ *$1 *}}" $inventorydir/classes || true
     ;;
-##TODO remove search-all, there is just too much
-#*  search-all                      show what variables are used
-    search-all)
-        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
-        $_grep --color -Hn -R -e "^.*:" -e "\s.*:" -e "\${.*}" -e "{{ *.* *}}" $inventorydir/nodes || true
-        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
-        $_grep --color -Hn -R -e "^.*:" -e "\s.*:" -e "\${.*}" -e "{{ *.* *}}" $inventorydir/classes || true
-    ;;
-#*  search-class class              show which class or node refers to a given
+#*  search-class classpattern       show which class or node refers to a given
 #*                                  class
     search-class)
         shift
@@ -1435,15 +1431,17 @@ EOF
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
         $_grep --color -Hn -R -e "^  - $1$" $inventorydir/classes || true
     ;;
-#*  search-in-playbooks variable    search the common-playbooks for a certain
+#*  search-in-playbooks pattern     search the common-playbooks for a certain
 #*                                  parameter as they overlap
-    search-in-playbooks)
+    search-in-playbooks|search-play*)
         shift
-        printf "\e[1;33mSearch string is found in plays:\e[0m\n"
-        $_grep --color -Hn -R -e "{{[a-zA-Z0-9_+ ]*${1}[a-zA-Z0-9_+ ]*}}" $playbookdir || true
+        for d in ${playbookdirs[@]} ; do
+            printf "\e[1;33mIn $d we found the string in these plays:\e[0m\n"
+            $_grep --color -Hn -R -e "{{[a-zA-Z0-9_+ ]*${1}[a-zA-Z0-9_+ ]*}}" $d || true
+        done
     ;;
-#*  search-external variable        show in which file an external
-#*                                  {{ variable }} is configured
+#*  search-external pattern         show in which file an 'external' (maestro)
+#*                                  {{ variable }} is used
     search-external)
         shift
         printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
@@ -1451,15 +1449,8 @@ EOF
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
         $_grep --color -Hn -R -e "{{ *$1 *}}" $inventorydir/classes || true
     ;;
-#*  search-external-all             show what external {{ variables }} are used
-    search-external-all)
-        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
-        $_grep --color -Hn -R -e "{{ *.* *}}" $inventorydir/nodes || true
-        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
-        $_grep --color -Hn -R -e "{{ *.* *}}" $inventorydir/classes || true
-    ;;
-#*  search-reclass variable         show in which file a ${variable} is
-#*                                  configured
+#*  search-reclass pattern          show in which file a ${variable} is
+#*                                  defined or used
     search-reclass)
         shift
         printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
@@ -1467,14 +1458,6 @@ EOF
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
         $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" $inventorydir/classes || true
     ;;
-#*  search-reclass-all              show what ${variables} are used
-    search-reclass-all)
-        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${.*}" $inventorydir/nodes || true
-        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${.*}" $inventorydir/classes || true
-    ;;
-
 #*  status (ss)                     test host by ssh and print distro and ip(s)
     ss|status)
         get_nodes
