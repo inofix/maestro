@@ -504,14 +504,14 @@ reclass_parser='BEGIN {
                 }
                 next
             }
-            /^  debops:$/ {
+#            /^  debops:$/ {
 #print "debops_="metamode
-                if ( metamode == "parameters" ) {
-                    metamode=metamode":debops"
-                    mode="debops"
-                }
-                next
-            }
+#                if ( metamode == "parameters" ) {
+#                    metamode=metamode":debops"
+#                    mode="debops"
+#                }
+#                next
+#            }
             /^  ansible:$/ {
                 if ( metamode == "parameters" ) {
                     metamode=metamode":ansible"
@@ -557,19 +557,20 @@ reclass_parser='BEGIN {
                 }
                 next
             }
-            /^      .*$/ {
-                if ( metamode == "parameters:debops" ) {
+#            /^      .*$/ {
+#                if ( metamode == "parameters:debops" ) {
 #print "debops___="metamode
-                    gsub("'"'"'", "")
-                    list=list "\n'"'"'" $0 "'"'"'"
-                    next
-                }
-            }
+#                    gsub("'"'"'", "")
+#                    list=list "\n'"'"'" $0 "'"'"'"
+#                    next
+#                }
+#            }
             /^    .*$/ {
-                if ( metamode == "parameters:debops" ) {
+#                if ( metamode == "parameters:debops" ) {
 #print "debops__="metamode
-                    next
-                } else if ( metamode == "parameters:ansible" ) {
+#                    next
+#                } else
+                if ( metamode == "parameters:ansible" ) {
                     gsub("\"", "\x22")
                     gsub(":", "\x3A")
                     # pure trial and error as I just dont get it..
@@ -583,7 +584,8 @@ reclass_parser='BEGIN {
                 }
             }
             /^ *- / {
-                if (( mode != "none") && ( mode != "debops" )) {
+#                if (( mode != "none") && ( mode != "debops" )) {
+                if ( mode != "none") {
                     gsub("'"'"'", "")
                     sub("- ", "")
                     list=list "\n'"'"'" $0 "'"'"'"
@@ -695,8 +697,8 @@ re_define_parsed_variables()
     classes=()
 #*** String:                environemnt
     environement=""
-#*** Array:                 parameters.debops
-    debops=()
+###*** Array:                 parameters.debops
+#    debops=()
 #*** String:                parameters.host__infrastructure
     hostinfrastructure=""
 #*** String:                parameters.host__locations
@@ -789,15 +791,6 @@ list_classes()
         printf "\e[0;35m - $c\n"
     done
     printf "\e[0;39m"
-}
-
-#
-list_debops()
-{
-    list_node $n
-    for (( i=0 ; i < ${#debops[@]} ; i++ )) ; do
-        echo "${debops[i]}"
-    done
 }
 
 # List packages installed
@@ -1281,11 +1274,6 @@ EOF
     lsc|list-c*)
         get_nodes
         process_nodes list_classes ${nodes[@]}
-    ;;
-#*  list-debops-inventory           list the ansible inventory of debops hosts
-    lsd|list-debops-inventory)
-        get_nodes
-        process_nodes list_debops ${nodes[@]}
     ;;
 #*  list-distro-packages            list app package names for the hosts distro
     lsp|list-distro-packages)
