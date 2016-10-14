@@ -55,7 +55,8 @@ rsync_options="-a -m --exclude=.keep"
 merge_only_this_subdir=""
 merge_mode="dir"
 
-# maestro's git repo
+# maestro's git repo - if not the current project dir (e.g. define in
+# global ~/.maestro for access to one main repo)
 maestrodir="$PWD"
 
 # usually the local dir
@@ -65,9 +66,6 @@ workdir="./workdir"
 inventorydirs=(
     ["main"]="./inventory"
 )
-
-# the merge of the above inventories will be stored here
-inventorydir="$maestrodir/.inventory"
 
 # ansible/debops instructions
 playbookdirs=(
@@ -202,6 +200,9 @@ fi
 [ ! -f "/usr/local/etc/$conffile" ] || . "/usr/local/etc/$conffile"
 [ ! -f ~/"$conffile" ] || . ~/"$conffile"
 [ ! -f "$conffile" ] || . "$conffile"
+
+# the merge of the above inventories will be stored here
+inventorydir="$maestrodir/.inventory"
 
 #* options:
 while true ; do
