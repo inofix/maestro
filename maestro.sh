@@ -220,7 +220,7 @@ while true ; do
         ;;
 #*  --ansible-become-su-root|-B     Ansible: Use --become-method su \
 #*                                              --become-user root -K
-        -B|--ansible-become-su)
+        -B|--ansible-become-su*)
             ansible_root="--become-method su --become-user root -K"
         ;;
 #*  --ansible-ask-password|-k       ask for the connection pw (see ansible -k)
