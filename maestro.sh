@@ -41,6 +41,11 @@ declare -A localdirs
 conffile=.maestro
 ### {{{
 
+# some "sane" ansible default values
+ansible_managed="Ansible managed: {file} modified on %Y-%m-%d %H:%M:%S by {uid} on {host}"
+ansible_timeout="60"
+ansible_scp_if_ssh="True"
+
 # whether to ask or not before applying changes..
 force=0
 
@@ -1107,6 +1112,10 @@ case $1 in
         for d in ${!localdirs[@]} ; do
             ansibleextravars="$ansibleextravars $d=${localdirs[$d]}"
         done
+        if [ -z "$ANSIBLE_CONFIG" ] ; then
+            ANSIBLE_CONFIG="$maestrodir/ansible.cfg"
+            export ANSIBLE_CONFIG
+        fi
     ;;&
 #*  ansible-fetch src dest [flat]   ansible oversimplified fetch module
 #*                                  wrapper (prefer ansible-play instead)
@@ -1117,17 +1126,14 @@ case $1 in
 #*                                  for destination path which looks like
 #*                                  localhost:/localpath/namespace/path/file
     ansible-fetch|fetch)
-
         src=$2
         dest=$3
-
         flat=""
         if [ -n "$4" ] ; then
 
             dest=$dest/$4/$src
             flat="flat=true"
         fi
-
         echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e '$ansibleextravars'} $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
@@ -1269,10 +1275,30 @@ case $1 in
 storage_type: yaml_fs
 inventory_base_uri: $inventorydir
 EOF
+            $_cat > "$maestrodir/ansible.cfg" << EOF
+[defaults]
+hostfile    = $inventorydir/hosts
+timeout     = $ansible_timeout
+ansible_managed = "$ansible_managed"
+
+[ssh_connection]
+scp_if_ssh = $Ansible_scp_if_ssh
+EOF
         else
             echo "write config file $inventorydir/reclass-config.yml"
             echo "  storage_type: yaml_fs"
             echo "  inventory_base_uri: $inventorydir"
+            echo "-EOF-"
+            echo "write config file $maestrodir/ansible.cfg"
+            echo "  [defaults]"
+            echo "  hostfile    = $inventorydir/hosts"
+            echo "  timeout     = $ansible_timeout"
+            echo "  ansible_managed = '$ansible_managed'"
+            echo ""
+            echo "  [ssh_connection]"
+            echo "  scp_if_ssh = $Ansible_scp_if_ssh"
+            echo "-EOF-"
+
         fi
     ;;
 #*  shortlist (l)                   list nodes - but just the hostname
