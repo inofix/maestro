@@ -41,6 +41,9 @@ declare -A localdirs
 conffile=.maestro
 ### {{{
 
+# whether to ask or not before applying changes..
+force=0
+
 # for status mode concentrate on this ip protocol
 ipprot="-4"
 
@@ -94,7 +97,6 @@ nodefilter=""
 projectfilter=""
 
 ansible_root=""
-force=1
 parser_dryrun=1
 pass_ask_pass=""
 ansible_verbose=""
@@ -246,7 +248,7 @@ while true ; do
             shift
             classfilter="$1"
         ;;
-#*  --force|-f                      do not ask before changing anything
+#*  --force|-f                      do not ask before changing anything (!-i)
         -f|--force)
             force=0
         ;;
@@ -271,6 +273,10 @@ while true ; do
         -H|--host|-N|--node)
             shift
             nodefilter="$1"
+        ;;
+#*  --interactive|-i                do ask before changing anything (!-f)
+        -i|--interactive)
+            force=1
         ;;
 #*  --merge|-m mode                 specify how to merge, available modes:
 #*                                    custom    based on "re-merge-custom"
