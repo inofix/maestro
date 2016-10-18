@@ -1135,8 +1135,8 @@ case $1 in
         fi
         $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
     ;;
-#*  ansible-plays-list (apls)       list all available plays (see 'playbookdir'
-#*                                  in your config.
+#*  ansible-plays-list (apls)       list all available plays (see 'playbookdir')
+#*                                  in your config (with explanation).
     ansible-plays-list|apls|pls)
     foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
     for p in ${foundplays[@]} ; do
@@ -1144,6 +1144,15 @@ case $1 in
         printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
         $_grep "^#\* " $p | $_sed 's;^#\*;  ;'
         printf "\e[0;39m"
+    done
+    ;;
+#*  ansible-plays-short-list (apsl) list all available plays (see 'playbookdir')
+#*                                  in your config (short).
+    ansible-plays-list|apsl|psl)
+    foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
+    for p in ${foundplays[@]} ; do
+        o=${p%.yml}
+        printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;39m\n"
     done
     ;;
 #*  ansible-play (play) play        wrapper to ansible which also includes
