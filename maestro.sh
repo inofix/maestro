@@ -216,12 +216,12 @@ while true ; do
     case "$1" in
 #*  --ansible-become-root|-b        Ansible: Use --become-user root -K
         -b|--ansible-become-root)
-            ansible_root="--become-user root -K"
+            ansible_root="--become --become-user root -K"
         ;;
 #*  --ansible-become-su-root|-B     Ansible: Use --become-method su \
 #*                                              --become-user root -K
         -B|--ansible-become-su*)
-            ansible_root="--become-method su --become-user root -K"
+            ansible_root="--become --become-method su --become-user root -K"
         ;;
 #*  --ansible-ask-password|-k       ask for the connection pw (see ansible -k)
         -k|--ask-pass)
