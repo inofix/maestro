@@ -795,7 +795,7 @@ list_applications()
     list_node $n
     for a in ${applications[@]} ; do
         printf "\e[0;36m - $a\n"
-    done
+    done | $_sort
     printf "\e[0;39m"
 }
 
@@ -805,7 +805,7 @@ list_classes()
     list_node $n
     for c in ${classes[@]} ; do
         printf "\e[0;35m - $c\n"
-    done
+    done | $_sort
     printf "\e[0;39m"
 }
 
