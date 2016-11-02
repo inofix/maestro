@@ -22,7 +22,7 @@ The central idea behind maestro is to build a knowledge
 base (CMDB) that can be used by several configuration management
 tools. It must be flexible enough to be split up as needed
 and simple enough such that one can work on several projects
-without having to think to much.
+without having to think too much.
 
 --
 
