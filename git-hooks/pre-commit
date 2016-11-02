@@ -1,0 +1,25 @@
+#!/bin/sh
+# This is a simple solution to always update the version if the main script
+# changes.. The repo must be tagged first! If someone has a better idea,
+# please send it to me (mic at inofix.ch).
+
+file=maestro.sh
+
+if ! git diff --quiet HEAD $file ; then
+    # this means there are actually changes in the main script
+    if git diff --quiet $file ; then
+        # this means all changes are added
+
+        new_version=$(git describe)
+        old_version=$(grep "^#\*\* Version: .*$" $file | awk '{print $3}')
+
+        if [ "$new_version" != "$old_version" ] ; then
+
+            echo "The main script has changed, number up the version to $new_version"
+
+            sed -i 's;^#\*\* Version: .*$;#** Version: '${new_version}';' $file
+            git add $file
+        fi
+    fi
+fi
+
