@@ -35,8 +35,13 @@ tricks..
 It is currently written in bash and gawk (see [4]), but will probably
 be rewritten in python[5] soon.
 
+--
  [1] http://reclass.pantsfullofunix.net/
+
  [2] https://www.ansible.com/
+
  [3] https://github.com/zwischenloesung/common-playbooks
+
  [4] https://www.gnu.org/
+
  [5] https://www.python.org/
