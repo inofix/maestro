@@ -3,6 +3,8 @@ Orchestrate any number of orchestras (i.e. config management environements).
 
 ![Maestro Logo](maestro.png "A thumbsketch of what this is all about..")
 
+'Pet' vs. 'herd'? This is the 'stable' approach!
+
 We started with cfengine to automate our server landscape,
 we even configured and administrated a mesh network based on
 embedded boxes based on linux/ulibc-busybox and cfengine
