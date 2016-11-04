@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.0
+#** Version: 1.0-12-gb57567c
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -41,6 +41,14 @@ declare -A localdirs
 conffile=.maestro
 ### {{{
 
+# some "sane" ansible default values
+ansible_managed="Ansible managed: {file} modified on %Y-%m-%d %H:%M:%S by {uid} on {host}"
+ansible_timeout="60"
+ansible_scp_if_ssh="True"
+
+# whether to ask or not before applying changes..
+force=0
+
 # for status mode concentrate on this ip protocol
 ipprot="-4"
 
@@ -55,7 +63,8 @@ rsync_options="-a -m --exclude=.keep"
 merge_only_this_subdir=""
 merge_mode="dir"
 
-# maestro's git repo
+# maestro's git repo - if not the current project dir (e.g. define in
+# global ~/.maestro for access to one main repo)
 maestrodir="$PWD"
 
 # usually the local dir
@@ -65,9 +74,6 @@ workdir="./workdir"
 inventorydirs=(
     ["main"]="./inventory"
 )
-
-# the merge of the above inventories will be stored here
-inventorydir="$maestrodir/.inventory"
 
 # ansible/debops instructions
 playbookdirs=(
@@ -96,7 +102,6 @@ nodefilter=""
 projectfilter=""
 
 ansible_root=""
-force=1
 parser_dryrun=1
 pass_ask_pass=""
 ansible_verbose=""
@@ -203,17 +208,20 @@ fi
 [ ! -f ~/"$conffile" ] || . ~/"$conffile"
 [ ! -f "$conffile" ] || . "$conffile"
 
+# the merge of the above inventories will be stored here
+inventorydir="$maestrodir/.inventory"
+
 #* options:
 while true ; do
     case "$1" in
 #*  --ansible-become-root|-b        Ansible: Use --become-user root -K
         -b|--ansible-become-root)
-            ansible_root="--become-user root -K"
+            ansible_root="--become --become-user root -K"
         ;;
 #*  --ansible-become-su-root|-B     Ansible: Use --become-method su \
 #*                                              --become-user root -K
-        -B|--ansible-become-su)
-            ansible_root="--become-method su --become-user root -K"
+        -B|--ansible-become-su*)
+            ansible_root="--become --become-method su --become-user root -K"
         ;;
 #*  --ansible-ask-password|-k       ask for the connection pw (see ansible -k)
         -k|--ask-pass)
@@ -245,7 +253,7 @@ while true ; do
             shift
             classfilter="$1"
         ;;
-#*  --force|-f                      do not ask before changing anything
+#*  --force|-f                      do not ask before changing anything (!-i)
         -f|--force)
             force=0
         ;;
@@ -270,6 +278,10 @@ while true ; do
         -H|--host|-N|--node)
             shift
             nodefilter="$1"
+        ;;
+#*  --interactive|-i                do ask before changing anything (!-f)
+        -i|--interactive)
+            force=1
         ;;
 #*  --merge|-m mode                 specify how to merge, available modes:
 #*                                    custom    based on "re-merge-custom"
@@ -783,7 +795,7 @@ list_applications()
     list_node $n
     for a in ${applications[@]} ; do
         printf "\e[0;36m - $a\n"
-    done
+    done | $_sort
     printf "\e[0;39m"
 }
 
@@ -793,7 +805,7 @@ list_classes()
     list_node $n
     for c in ${classes[@]} ; do
         printf "\e[0;35m - $c\n"
-    done
+    done | $_sort
     printf "\e[0;39m"
 }
 
@@ -1100,6 +1112,10 @@ case $1 in
         for d in ${!localdirs[@]} ; do
             ansibleextravars="$ansibleextravars $d=${localdirs[$d]}"
         done
+        if [ -z "$ANSIBLE_CONFIG" ] ; then
+            ANSIBLE_CONFIG="$maestrodir/ansible.cfg"
+            export ANSIBLE_CONFIG
+        fi
     ;;&
 #*  ansible-fetch src dest [flat]   ansible oversimplified fetch module
 #*                                  wrapper (prefer ansible-play instead)
@@ -1110,17 +1126,14 @@ case $1 in
 #*                                  for destination path which looks like
 #*                                  localhost:/localpath/namespace/path/file
     ansible-fetch|fetch)
-
         src=$2
         dest=$3
-
         flat=""
         if [ -n "$4" ] ; then
 
             dest=$dest/$4/$src
             flat="flat=true"
         fi
-
         echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e '$ansibleextravars'} $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
@@ -1128,8 +1141,8 @@ case $1 in
         fi
         $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
     ;;
-#*  ansible-plays-list (apls)       list all available plays (see 'playbookdir'
-#*                                  in your config.
+#*  ansible-plays-list (apls)       list all available plays (see 'playbookdir')
+#*                                  in your config (with explanation).
     ansible-plays-list|apls|pls)
     foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
     for p in ${foundplays[@]} ; do
@@ -1137,6 +1150,15 @@ case $1 in
         printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
         $_grep "^#\* " $p | $_sed 's;^#\*;  ;'
         printf "\e[0;39m"
+    done
+    ;;
+#*  ansible-plays-short-list (apsl) list all available plays (see 'playbookdir')
+#*                                  in your config (short).
+    ansible-plays-list|apsl|psl)
+    foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
+    for p in ${foundplays[@]} ; do
+        o=${p%.yml}
+        printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;39m\n"
     done
     ;;
 #*  ansible-play (play) play        wrapper to ansible which also includes
@@ -1147,12 +1169,12 @@ case $1 in
         p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${2}.yml)"
         [ -n "$p" ] ||
             error "There is no play called ${2}.yml in ${playbookdirs[@]}"
-        echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass ${ansible_root:+-b -K} -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
+        echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass ${ansible_root:+-b -K} -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $p
+        $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $p
     ;;
 #*  ansible-put src dest            ansible oversimplified copy module wrapper
 #*                                  (prefer ansible-play instead)
@@ -1253,10 +1275,30 @@ case $1 in
 storage_type: yaml_fs
 inventory_base_uri: $inventorydir
 EOF
+            $_cat > "$maestrodir/ansible.cfg" << EOF
+[defaults]
+hostfile    = $inventorydir/hosts
+timeout     = $ansible_timeout
+ansible_managed = "$ansible_managed"
+
+[ssh_connection]
+scp_if_ssh = $Ansible_scp_if_ssh
+EOF
         else
             echo "write config file $inventorydir/reclass-config.yml"
             echo "  storage_type: yaml_fs"
             echo "  inventory_base_uri: $inventorydir"
+            echo "-EOF-"
+            echo "write config file $maestrodir/ansible.cfg"
+            echo "  [defaults]"
+            echo "  hostfile    = $inventorydir/hosts"
+            echo "  timeout     = $ansible_timeout"
+            echo "  ansible_managed = '$ansible_managed'"
+            echo ""
+            echo "  [ssh_connection]"
+            echo "  scp_if_ssh = $Ansible_scp_if_ssh"
+            echo "-EOF-"
+
         fi
     ;;
 #*  shortlist (l)                   list nodes - but just the hostname
