@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.0-12-gb57567c
+#** Version: 1.0-14-gc43f4fd
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -38,7 +38,7 @@ declare -A localdirs
 
 ### you may copy the following variables into this file for having your own
 ### local config ...
-conffile=.maestro
+conffile=maestro
 ### {{{
 
 # some "sane" ansible default values
@@ -67,7 +67,7 @@ merge_mode="dir"
 # global ~/.maestro for access to one main repo)
 maestrodir="$PWD"
 
-# usually the local dir
+# usually inside the local dir
 workdir="./workdir"
 
 # the reclass sources will constitute the knowledge base for the meta data
@@ -202,11 +202,22 @@ if [ $fail -eq 0 ] ; then
     die "Please install the above mentioned tools first.."
 fi
 
+#* config file hierarchy (default $conffile=maestro):
+#*  * first try to source the systemwide config in /etc/maestro
 [ ! -f "/etc/$conffile" ] || . "/etc/$conffile"
+#*  * overwrite it with global config /usr/etc/maestro
 [ ! -f "/usr/etc/$conffile" ] || . "/usr/etc/$conffile"
+#*  * overwrite it with global config installed locally /usr/local/etc/maestro
 [ ! -f "/usr/local/etc/$conffile" ] || . "/usr/local/etc/$conffile"
-[ ! -f ~/"$conffile" ] || . ~/"$conffile"
-[ ! -f "$conffile" ] || . "$conffile"
+#*  * then prefer the user config if available ~/.maestro
+[ ! -f ~/."$conffile" ] || . ~/."$conffile"
+#*  * finally test for the config in the path specified - default value is the
+#*    current directory: ./maestro or ./.maestro
+if [ -f "$conffile" ] ; then
+    . "$conffile"
+elif [ -f ".$conffile" ] ; then
+    . ".$conffile"
+fi
 
 # the merge of the above inventories will be stored here
 inventorydir="$maestrodir/.inventory"
