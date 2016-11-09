@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.0-15-g5b6b17d
+#** Version: 1.1
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
