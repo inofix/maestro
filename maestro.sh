@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.0-14-gc43f4fd
+#** Version: 1.0-15-g5b6b17d
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -80,6 +80,9 @@ playbookdirs=(
     ["common_playbooks"]=""
 )
 
+# file name of the galaxy role definition (relative to the playbookdirs)
+galaxyroles="galaxy/roles.yml"
+
 # further directories/repos that can be used
 localdirs=(
     ["any_confix"]=""
@@ -111,6 +114,7 @@ declare -A sys_tools
 sys_tools=(
             ["_ansible"]="/usr/bin/ansible"
             ["_ansible_playbook"]="/usr/bin/ansible-playbook"
+            ["_ansible_galaxy"]="/usr/bin/ansible-galaxy"
             ["_awk"]="/usr/bin/gawk"
             ["_basename"]="/usr/bin/basename"
             ["_cat"]="/bin/cat"
@@ -141,6 +145,7 @@ sys_tools=(
 danger_tools=(
             "_ansible"
             "_ansible_playbook"
+            "_ansible_galaxy"
             "_cp"
             "_cat"
             "_dd"
@@ -1291,6 +1296,7 @@ EOF
 hostfile    = $inventorydir/hosts
 timeout     = $ansible_timeout
 ansible_managed = "$ansible_managed"
+roles_path  = $maestrodir/.ansible-galaxy-roles
 
 [ssh_connection]
 scp_if_ssh = $Ansible_scp_if_ssh
@@ -1311,6 +1317,26 @@ EOF
             echo "-EOF-"
 
         fi
+        echo "Installing all necessary ansible-galaxy roles"
+        for f in ${playbookdirs[@]}/${galaxyroles} ; do
+            if [ -f "${f}" ] ; then
+                echo "found ${f}"
+                if $_grep "^- src:" $f ; then
+                    if $_ansible_galaxy install -r $f ; then
+                        echo "done."
+                    else
+                        error "ansible-galaxy failed to perform the" \
+                                "installation. Please make sure all the" \
+                                "roles do exist and that you have" \
+                                "write access to the ansible 'roles_path'," \
+                                "it can be controled in ansible.cfg in" \
+                                "the [defaults] section."
+                    fi
+                else
+                    echo ".. but it was empty, ignoring.."
+                fi
+            fi
+        done
     ;;
 #*  shortlist (l)                   list nodes - but just the hostname
     l|shortlist)
