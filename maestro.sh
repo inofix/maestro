@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.1
+#** Version: 1.1-1-g4dfd3a5
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1220,10 +1220,20 @@ case $1 in
             done
         fi
     ;;&
-#*  applications-list (als)         list hosts sorted by applications
+#*  applications-list [app]         list hosts sorted by applications
     als|app*)
         get_nodes
         process_nodes process_applications ${nodes[@]}
+        shift
+        if [ -n "$1" ] ; then
+            if [ -n "${applications_dict[$1]}" ] ; then
+                hs="${applications_dict[$1]}"
+                applications_dict=()
+                applications_dict[$1]="$hs"
+            else
+                die "Application '$1' not found in knowledge base"
+            fi
+        fi
         for a in $( echo ${!applications_dict[@]} | $_tr " " "\n" | $_sort ) ; do
             printf "\e[1;34m[$a]\n"
             for h in $(echo -e ${applications_dict[$a]//:/ \\n} | $_sort -u); do
@@ -1232,10 +1242,20 @@ case $1 in
         done
         printf "\e[0;39m"
     ;;
-#*  classes-list (cls)              list hosts sorted by class
+#*  classes-list [class]            list hosts sorted by class
     cls|class*)
         get_nodes
         process_nodes process_classes ${nodes[@]}
+        shift
+        if [ -n "$1" ] ; then
+            if [ -n "${classes_dict[$1]}" ] ; then
+                hs="${classes_dict[$1]}"
+                classes_dict=()
+                classes_dict[$1]="$hs"
+            else
+                die "Class '$1' not found in knowledge base"
+            fi
+        fi
         for a in $( echo ${!classes_dict[@]} | $_tr " " "\n" | $_sort ) ; do
             printf "\e[1;35m[$a]\n"
             for h in $( echo -e ${classes_dict[$a]//:/ \\n} | $_sort -u ) ; do
