@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.1-3-g5b37c2f
+#** Version: 1.1-4-g877cd4c
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -97,7 +97,7 @@ ansible_connect=/usr/share/reclass/reclass-ansible
 ansibleoptions=""
 
 # how much feedback to give
-verbose="0"
+verbose="1"
 
 ### }}}
 
@@ -366,10 +366,10 @@ done
 
 if [ $verbose -eq 0 ] ; then
     ansible_verbose=""
-elif [ $verbose -eq 1 ] ; then
+elif [ $verbose -eq 2 ] ; then
     ansible_verbose="-v"
     rsync_options="$rsync_options -v"
-elif [ $verbose -gt 1 ] ; then
+elif [ $verbose -gt 2 ] ; then
     ansible_verbose="-vvv"
     rsync_options="$rsync_options -v"
 fi
@@ -729,9 +729,9 @@ connect_node()
 #
 do_sync()
 {
-    if [ $verbose -gt 1 ] ; then
-        printf "\e[1;39mCreating directory $2 to sync from $1 with these\n"
-        printf "options: '$rsync_options'\n\e[0;39m"
+    if [ $verbose -gt 0 ] ; then
+        printf "\e[0;39mSynchronizing (rsync options: '$rsync_options')\n"
+        printf " \e[1m$1\e[0m to \e[1m$2\e[0m\n"
     fi
     if [ -d "$1" ] ; then
         $_mkdir -p $2
