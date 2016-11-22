@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.1-1-g4dfd3a5
+#** Version: 1.1-6-g056d03e
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -95,6 +95,9 @@ ansible_connect=/usr/share/reclass/reclass-ansible
 
 # options to pass to ansible (see also -A/--ansible-options)
 ansibleoptions=""
+
+# how much feedback to give
+verbose="1"
 
 ### }}}
 
@@ -321,19 +324,24 @@ while true ; do
             projectfilter="$1"
             classfilter="project.$1"
         ;;
+#*  --quiet                         equal to '--verbose 0'
+        -q|--quiet)
+            verbose="0"
+        ;;
 #*  --subdir-only-merge|-s          concentrate on this subdir only
         -s|--subdir-only-merge)
             shift
             merge_only_this_subdir=$1
         ;;
-#*  --verbose|-v                    print out what is done
-        -v|--verbose)
-            if [ -z "$ansible_verbose" ] ; then
-                ansible_verbose="-v"
-            else
-                ansible_verbose="-vvv"
+#TODO actually fix all functions to respect the verbose parameter..
+#*  --verbose|-v [level]            print out what is done ([0]:quiet [1..])
+        -v*|--v*)
+            if [ -z "$2" ] || [ "${2:0:1}" == "-" ] ; then
+                verbosity="1"
+            elif [ -z "${2/[0-9]*/}" ] ; then
+                shift
+                verbose=$1
             fi
-            rsync_options="$rsync_options -v"
         ;;
 #*  --version|-V                    print version information and exit
         -V|--version)
@@ -355,6 +363,16 @@ while true ; do
     esac
     shift
 done
+
+if [ $verbose -eq 0 ] ; then
+    ansible_verbose=""
+elif [ $verbose -eq 2 ] ; then
+    ansible_verbose="-v"
+    rsync_options="$rsync_options -v"
+elif [ $verbose -gt 2 ] ; then
+    ansible_verbose="-vvv"
+    rsync_options="$rsync_options -v"
+fi
 
 if [ $dryrun -eq 0 ] ; then
     _pre="echo "
@@ -711,6 +729,9 @@ connect_node()
 #
 do_sync()
 {
+    if [ $verbose -gt 0 ] ; then
+        printf " \e[1;36m$1\e[0;39m -> \e[1;35m$2\e[0;39m\n"
+    fi
     if [ -d "$1" ] ; then
         $_mkdir -p $2
         $_rsync $rsync_options $1 $2
@@ -978,7 +999,12 @@ process_nodes()
     for n in $@ ; do
         if [ -n "$nodefilter" ] && [ "$nodefilter" != "$n" ] &&
                 [ "$nodefilter" != "${n%%.*}" ]  ; then
+            if [ $verbose -gt 1 ] ; then
+                printf "\e[1;31mNo match for $n\n\e[0;39m"
+            fi
             continue
+        elif [ $verbose -gt 0 ] ; then
+            printf "\e[1;32mMached node: $n\n\e[0;39m"
         fi
         hostname="${n%%.*}"
         domainname="${n#*.}"
@@ -992,13 +1018,15 @@ re_merge_custom()
     #better safe than sorry
     [ -n "$1" ] || error "ERROR: Source directory was empty!"
     [ "${1/*$n*/XXX}" == "XXX" ] || error "ERROR: Source directory was $1"
-
     for m in ${!remergecustomsrc[@]} ; do
-
+        if [ $verbose -gt 0 ] ; then
+            printf "\e[0;39m Merging $1/${remergecustomsrc[$m]} to ${remergecustomdest[$m]}\n"
+        fi
         if [ -e "$1/${remergecustomsrc[$m]}" ] ; then
-
             $_mkdir -p ${remergecustomdest[$m]%/*}
             $_cp $1/${remergecustomsrc[$m]} ${remergecustomdest[$m]}
+        elif [ $verbose -gt 0 ] ; then
+            printf "\e[0:31m  Skipping $1/${remergecustomsrc[$m]} as it does not exist..\n\e[0;39m"
         fi
     done
 }
@@ -1075,6 +1103,10 @@ merge_all()
         dir)
         ;;
         in|post|pre)
+echo "TODO: what shall we do here?"
+echo "disabled for now - as there are issues with one single workdir"
+echo "and custom-merge is more flexible anyway.."
+exit
             t="$workdir/$n/"
             for d in $($_find $t -type d) ; do
                 $_mkdir -p $workdir/${d/$t/}
@@ -1383,17 +1415,17 @@ EOF
         get_nodes
         process_nodes list_distro_packages ${nodes[@]}
     ;;
-#*  list-merge-customs (lsmc)       show custom merge rules
+#*  list-merge-customs (lsmc)       show custom storage merge rules
     lsmc|list-merge-c*)
         get_nodes
         process_nodes list_node_re_merge_custom ${nodes[@]}
     ;;
-#*  list-merge-exceptions (lsme)    show exceptions for merge modes
-    lsme|list-merge-e*)
-        get_nodes
-        process_nodes list_node_re_merge_exceptions ${nodes[@]}
-    ;;
-#*  list-storage (lss)              show storage directories
+##*  list-merge-exceptions (lsme)    show exceptions for storage merge modes
+#    lsme|list-merge-e*)
+#        get_nodes
+#        process_nodes list_node_re_merge_exceptions ${nodes[@]}
+#    ;;
+#*  list-storage (lss)              show storage directories (for merging)
     lss|list-storage)
         get_nodes
         process_nodes list_node_stores ${nodes[@]}
@@ -1407,6 +1439,8 @@ EOF
 #*                                  to $workdir
     merge|merge-a*|mg)
         get_nodes
+        printf "\e[1;39mSynchronizing storage dirs \e[0m(rsync options: "
+        printf "\e[1;34m'$rsync_options'\e[0;39m)\n"
         process_nodes merge_all ${nodes[@]}
     ;;
 #*  merge-custom (mc)               merge after custom rules defined in reclass
@@ -1417,28 +1451,27 @@ EOF
         merge_mode="custom"
         process_nodes merge_all ${nodes[@]}
     ;;
-#*  merge-pre (mpr)                 merge storage dirs and prefix with hostname
-#*                                  to $workdir
-    merge-pr*|mpr)
-        get_nodes
-        merge_mode="pre"
-        process_nodes merge_all ${nodes[@]}
-    ;;
-#*  merge-in (mi)                   merge storage dirs and infix with hostname
-#*                                  to $workdir
-    merge-i*|mi)
-        get_nodes
-        merge_mode="in"
-        process_nodes merge_all ${nodes[@]}
-    ;;
-#*  merge-post (mpo)                merge storage dirs and postfix with hostname
-#*                                  to $workdir
-    merge-po*|mpo)
-        get_nodes
-        merge_mode="post"
-        process_nodes merge_all ${nodes[@]}
-    ;;
-
+##*  merge-pre (mpr)                 merge storage dirs and prefix with hostname
+##*                                  to $workdir
+#    merge-pr*|mpr)
+#        get_nodes
+#        merge_mode="pre"
+#        process_nodes merge_all ${nodes[@]}
+#    ;;
+##*  merge-in (mi)                   merge storage dirs and infix with hostname
+##*                                  to $workdir
+#    merge-i*|mi)
+#        get_nodes
+#        merge_mode="in"
+#        process_nodes merge_all ${nodes[@]}
+#    ;;
+##*  merge-post (mpo)                merge storage dirs and postfix with hostname
+##*                                  to $workdir
+#    merge-po*|mpo)
+#        get_nodes
+#        merge_mode="post"
+#        process_nodes merge_all ${nodes[@]}
+#    ;;
 ##*  re-merge                        remerge as specified in '--merge mode'
 #    rem|re-merge*)
 #        process_nodes re-merge ${nodes[@]}
