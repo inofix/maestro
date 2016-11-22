@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.1-5-g1a6bab7
+#** Version: 1.1-6-g056d03e
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -730,9 +730,7 @@ connect_node()
 do_sync()
 {
     if [ $verbose -gt 0 ] ; then
-        printf "\e[0;39mSynchronizing (rsync options: \e[1m'$rsync_options'"
-        printf "\e[0m)\n"
-        printf " \e[1;36m$1\e[0;39m to \e[1;35m$2\e[0;39m\n"
+        printf " \e[1;36m$1\e[0;39m -> \e[1;35m$2\e[0;39m\n"
     fi
     if [ -d "$1" ] ; then
         $_mkdir -p $2
@@ -1441,6 +1439,8 @@ EOF
 #*                                  to $workdir
     merge|merge-a*|mg)
         get_nodes
+        printf "\e[1;39mSynchronizing storage dirs \e[0m(rsync options: "
+        printf "\e[1;34m'$rsync_options'\e[0;39m)\n"
         process_nodes merge_all ${nodes[@]}
     ;;
 #*  merge-custom (mc)               merge after custom rules defined in reclass
