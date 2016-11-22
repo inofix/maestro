@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.1-4-g877cd4c
+#** Version: 1.1-5-g1a6bab7
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -730,8 +730,9 @@ connect_node()
 do_sync()
 {
     if [ $verbose -gt 0 ] ; then
-        printf "\e[0;39mSynchronizing (rsync options: '$rsync_options')\n"
-        printf " \e[1m$1\e[0m to \e[1m$2\e[0m\n"
+        printf "\e[0;39mSynchronizing (rsync options: \e[1m'$rsync_options'"
+        printf "\e[0m)\n"
+        printf " \e[1;36m$1\e[0;39m to \e[1;35m$2\e[0;39m\n"
     fi
     if [ -d "$1" ] ; then
         $_mkdir -p $2
