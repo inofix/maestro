@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.1-1-g4dfd3a5
+#** Version: 1.1-2-g3f8b5fe
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -321,6 +321,7 @@ while true ; do
             projectfilter="$1"
             classfilter="project.$1"
         ;;
+#TODO*  --quiet
 #*  --subdir-only-merge|-s          concentrate on this subdir only
         -s|--subdir-only-merge)
             shift
@@ -1383,17 +1384,17 @@ EOF
         get_nodes
         process_nodes list_distro_packages ${nodes[@]}
     ;;
-#*  list-merge-customs (lsmc)       show custom merge rules
+#*  list-merge-customs (lsmc)       show custom storage merge rules
     lsmc|list-merge-c*)
         get_nodes
         process_nodes list_node_re_merge_custom ${nodes[@]}
     ;;
-#*  list-merge-exceptions (lsme)    show exceptions for merge modes
+#*  list-merge-exceptions (lsme)    show exceptions for storage merge modes
     lsme|list-merge-e*)
         get_nodes
         process_nodes list_node_re_merge_exceptions ${nodes[@]}
     ;;
-#*  list-storage (lss)              show storage directories
+#*  list-storage (lss)              show storage directories (for merging)
     lss|list-storage)
         get_nodes
         process_nodes list_node_stores ${nodes[@]}
