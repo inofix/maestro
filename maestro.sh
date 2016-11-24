@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.1-6-g056d03e
+#** Version: 1.1-7-gab95f09
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -368,7 +368,6 @@ if [ $verbose -eq 0 ] ; then
     ansible_verbose=""
 elif [ $verbose -eq 2 ] ; then
     ansible_verbose="-v"
-    rsync_options="$rsync_options -v"
 elif [ $verbose -gt 2 ] ; then
     ansible_verbose="-vvv"
     rsync_options="$rsync_options -v"
@@ -729,8 +728,8 @@ connect_node()
 #
 do_sync()
 {
-    if [ $verbose -gt 0 ] ; then
-        printf " \e[1;36m$1\e[0;39m -> \e[1;35m$2\e[0;39m\n"
+    if [ $verbose -gt 1 ] ; then
+        printf "    \e[1;36m$1\e[0;39m -> \e[1;35m$2\e[0;39m\n"
     fi
     if [ -d "$1" ] ; then
         $_mkdir -p $2
@@ -999,11 +998,11 @@ process_nodes()
     for n in $@ ; do
         if [ -n "$nodefilter" ] && [ "$nodefilter" != "$n" ] &&
                 [ "$nodefilter" != "${n%%.*}" ]  ; then
-            if [ $verbose -gt 1 ] ; then
+            if [ $verbose -gt 2 ] ; then
                 printf "\e[1;31mNo match for $n\n\e[0;39m"
             fi
             continue
-        elif [ $verbose -gt 0 ] ; then
+        elif [ $verbose -gt 2 ] ; then
             printf "\e[1;32mMached node: $n\n\e[0;39m"
         fi
         hostname="${n%%.*}"
@@ -1085,6 +1084,9 @@ re_merge_exceptions_first()
 
 merge_all()
 {
+    if [ $verbose -gt 0 ] ; then
+        printf "\e[1;39m  - $1\e[0;39m\n"
+    fi
     if [ ! -d "$workdir" ] ; then
         die "Target directory '$workdir' does not exist!"
     fi
@@ -1439,8 +1441,10 @@ EOF
 #*                                  to $workdir
     merge|merge-a*|mg)
         get_nodes
-        printf "\e[1;39mSynchronizing storage dirs \e[0m(rsync options: "
-        printf "\e[1;34m'$rsync_options'\e[0;39m)\n"
+        if [ $verbose -gt 0 ] ; then
+            printf "\e[1;39mSynchronizing storage dirs \e[0m(rsync options: "
+            printf "\e[1;34m'$rsync_options'\e[0;39m)\n"
+        fi
         process_nodes merge_all ${nodes[@]}
     ;;
 #*  merge-custom (mc)               merge after custom rules defined in reclass
