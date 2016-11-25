@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.1-8-g10c2473
+#** Version: 1.1-9-g742b279
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -318,8 +318,8 @@ while true ; do
         -q|--quiet)
             verbose="0"
         ;;
-#*  --subdir-only-merge|-s          concentrate on this subdir only
-        -s|--subdir-only-merge)
+#*  --subdir-only|-s subdir         concentrate on this subdir only for merges
+        -s|--subdir-only|--subdir-only-merge)
             shift
             merge_only_this_subdir=$1
         ;;
@@ -1031,6 +1031,9 @@ merge_all()
     src_subdir=""
     trgt_subdir=""
     if [ -n "$merge_only_this_subdir" ] ; then
+        if [ $verbose -gt 1 ] ; then
+            printf "    - focus on '$merge_only_this_subdir' only\n"
+        fi
         src="$merge_only_this_subdir"
         trgt="$merge_only_this_subdir"
     fi
@@ -1056,12 +1059,15 @@ un_merge_all()
     if [ $verbose -gt 0 ] ; then
         printf "\e[1;39m  - $1\e[0;39m\n"
     fi
-if [ ! -d "$workdir" ] ; then
+    if [ ! -d "$workdir" ] ; then
         die "Source directory '$workdir' does not exist!"
     fi
     src_subdir=""
     trgt_subdir=""
     if [ -n "$merge_only_this_subdir" ] ; then
+        if [ $verbose -gt 1 ] ; then
+            printf "    - focus on '$merge_only_this_subdir' only\n"
+        fi
         src="$merge_only_this_subdir"
         trgt="$merge_only_this_subdir"
     fi
