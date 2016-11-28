@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.1-10-g03bd06e
+#** Version: 1.1-11-g06802bc
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -626,8 +626,8 @@ reclass_parser='BEGIN {
 #                if (( mode != "none") && ( mode != "debops" )) {
                 if ( mode != "none") {
                     gsub("'"'"'", "")
-                    sub("- ", "")
-                    list=list "\n'"'"'" $0 "'"'"'"
+                    sub(" *- *", "")
+                    list=list "\n'"'"'"$0"'"'"'"
                 }
                 next
             }
@@ -1079,9 +1079,7 @@ un_merge_all()
                 fi
                 t=${f/$workdir\/$n\/$trgt/}
                 let i=${#storagedirs[@]}-1
-                wtf=${storagedirs[$i]}/$t
-ls $wtf
-                if [ -f "$wtf" ] ; then
+                if [ -f "${storagedirs[$i]}/$t" ] ; then
                     printf "      found '$f' in last/host storage dir "
                     printf " '${storagedirs[$i]}/$t', merging!\n"
                     $_cp "$f" "${storagedirs[$i]}/$t"
@@ -1120,7 +1118,7 @@ ls $wtf
                         fi
                         printf "File \e[1m'$f'\e[0m is not persisted yet.\n"
                         printf "Which directory do you prefer for storage?\n"
-                        printf "  0)  none\n"
+                        printf "  0) none\n"
                         for (( i=0 ; i<${#storagedirs[@]} ; i++ )) ; do
                             let j=i+1
                             printf "  $j) ${storagedirs[$i]}\n"
