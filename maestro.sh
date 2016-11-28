@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.1-9-g742b279
+#** Version: 1.1-10-g03bd06e
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1074,19 +1074,67 @@ un_merge_all()
     case "$merge_mode" in
         dir|custom)
             for f in $($_find "$workdir/$n/$src/" -type f) ; do
-
-                t=${f/$workdir/$n/$trgt/}
+                if [ $verbose -gt 2 ] ; then
+                    printf "    processing $f\n"
+                fi
+                t=${f/$workdir\/$n\/$trgt/}
                 let i=${#storagedirs[@]}-1
-                if [ -f "${storagedirs[$i]}/$t" ] ; then
+                wtf=${storagedirs[$i]}/$t
+ls $wtf
+                if [ -f "$wtf" ] ; then
+                    printf "      found '$f' in last/host storage dir "
+                    printf " '${storagedirs[$i]}/$t', merging!\n"
                     $_cp "$f" "${storagedirs[$i]}/$t"
                     continue
                 else
-                    for (( j=i-1 ; j<=0 ; j-- )) ; do
+                    answer=n
+                    unmerge_done=1
+                    for (( j=i-1 ; j>=0 ; j-- )) ; do
                         if [ -f "${storagedirs[$j]}/$t" ] ; then
-                            $_cp -i "$f" "${storagedirs[$j]}/$t"
-                            break
+                            printf "      found '$f' in storage dir "
+                            printf " '${storagedirs[$i]}/$t'"
+                            if [ 0 -eq "$force" ] ; then
+                                printf ", merging (--force)!\n"
+                                answer=0
+                            else
+                                printf ", do you want to merge? [yN] "
+                                read answer
+                            fi
+                            case $answer in
+                                y*|Y*)
+                                    $_cp "$f" "${storagedirs[$j]}/$t"
+                                    unmerge_done=0
+                                    break
+                                ;;
+                                *)
+                                    printf "      .. not merging.\n"
+                                ;;
+                            esac
                         fi
                     done
+                    if [ 0 -ne "$unmerge_done" ] ; then
+                        if [ 0 -eq "$force" ] ; then
+                            printf "No target found, use '-i' for interactive"
+                            printf " mode.\n"
+                            continue
+                        fi
+                        printf "File \e[1m'$f'\e[0m is not persisted yet.\n"
+                        printf "Which directory do you prefer for storage?\n"
+                        printf "  0)  none\n"
+                        for (( i=0 ; i<${#storagedirs[@]} ; i++ )) ; do
+                            let j=i+1
+                            printf "  $j) ${storagedirs[$i]}\n"
+                        done
+                        read answer
+                        if [ $answer -eq 0 ] ; then
+                            noop
+                            continue
+                        else
+                            let answer--
+                            $_mkdir -p "${storagedirs[$answer]}/${t%/*}"
+                            $_cp "$f" "${storagedirs[$answer]}/$t"
+                        fi
+                    fi
                 fi
             done
         ;;&
@@ -1541,8 +1589,7 @@ EOF
     unmerge|umg)
         get_nodes
         if [ $verbose -gt 0 ] ; then
-            printf "\e[1;39mSynchronizing back to storage dirs \e[0m(rsync options: "
-            printf "\e[1;34m'$rsync_options'\e[0;39m)\n"
+            printf "\e[1;39mSynchronizing back to storage dirs\e[0m\n"
         fi
         process_nodes un_merge_all ${nodes[@]}
     ;;
