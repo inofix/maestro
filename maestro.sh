@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.1-12-g0674546
+#** Version: 1.1-13-gca14b81
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -47,7 +47,7 @@ ansible_timeout="60"
 ansible_scp_if_ssh="True"
 
 # whether to ask or not before applying changes..
-force=0
+force=1
 
 # for status mode concentrate on this ip protocol
 ipprot="-4"
@@ -122,6 +122,7 @@ sys_tools=(
             ["_basename"]="/usr/bin/basename"
             ["_cat"]="/bin/cat"
             ["_cp"]="/bin/cp"
+            ["_diff"]="/usr/bin/diff"
             ["_dirname"]="/usr/bin/dirname"
             ["_find"]="/usr/bin/find"
             ["_git"]="/usr/bin/git"
@@ -1074,29 +1075,48 @@ unfold_all()
     case "$merge_mode" in
         dir|custom)
             for f in $($_find "$workdir/$n/$src/" -type f) ; do
-                if [ $verbose -gt 2 ] ; then
+                if [ $verbose -gt 1 ] ; then
                     printf "    processing $f\n"
                 fi
                 t=${f/$workdir\/$n\/$trgt/}
                 let i=${#storagedirs[@]}-1
                 if [ -f "${storagedirs[$i]}/$t" ] ; then
-                    printf "      found '$f' in last/host storage dir "
-                    printf " '${storagedirs[$i]}/$t', merging!\n"
-                    $_cp "$f" "${storagedirs[$i]}/$t"
-                    continue
+                    rv=0
+                    $_diff -q "$f" "${storagedirs[$i]}/$t" 2>&1 >/dev/null || rv=$?
+                    if [ 0 -eq $rv ] ; then
+                        if [ $verbose -gt 2 ] ; then
+                            printf "    No changes found at ${storagedirs[$i]}/$t\n"
+                        fi
+                        continue
+                    elif [ 1 -eq $rv ] ; then
+                        printf "      found '$f' in last/host storage dir "
+                        printf " '${storagedirs[$i]}/$t', merging!\n"
+                        $_cp "$f" "${storagedirs[$i]}/$t"
+                        continue
+                    fi
                 else
                     answer=n
                     unmerge_done=1
                     for (( j=i-1 ; j>=0 ; j-- )) ; do
                         if [ -f "${storagedirs[$j]}/$t" ] ; then
-                            printf "      found '$f' in storage dir "
-                            printf " '${storagedirs[$i]}/$t'"
-                            if [ 0 -eq "$force" ] ; then
-                                printf ", merging (--force)!\n"
-                                answer=0
-                            else
-                                printf ", do you want to merge? [yN] "
-                                read answer
+                            rv=0
+                            $_diff -q "$f" "${storagedirs[$j]}/$t" 2>&1 >/dev/null || rv=$?
+                            if [ 0 -eq $rv ] ; then
+                                if [ $verbose -gt 2 ] ; then
+                                    printf "    No changes found at ${storagedirs[$j]}/$t\n"
+                                fi
+                                unmerge_done=0
+                                break
+                            elif [ 1 -eq $rv ] ; then
+                                printf "      found '$f' in storage dir "
+                                printf " '${storagedirs[$i]}/$t'"
+                                if [ 0 -eq "$force" ] ; then
+                                    printf ", merging (--force)!\n"
+                                    answer=0
+                                else
+                                    printf ", do you want to merge? [yN] "
+                                    read answer
+                                fi
                             fi
                             case $answer in
                                 y*|Y*)
@@ -1124,7 +1144,7 @@ unfold_all()
                             printf "  $j) ${storagedirs[$i]}\n"
                         done
                         read answer
-                        if [ $answer -eq 0 ] ; then
+                        if [ -z "$answer" ] || [ $answer -eq 0 ] ; then
                             noop
                             continue
                         else
