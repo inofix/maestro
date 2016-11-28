@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.1-11-g06802bc
+#** Version: 1.1-12-g0674546
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1054,7 +1054,7 @@ merge_all()
     esac
 }
 
-un_merge_all()
+unfold_all()
 {
     if [ $verbose -gt 0 ] ; then
         printf "\e[1;39m  - $1\e[0;39m\n"
@@ -1445,6 +1445,7 @@ EOF
         get_nodes
         process_nodes list_node_type ${nodes[@]}
     ;;
+####TODO rename to fold/unfold ??
 #*  merge (mg)                      just merge all storage directories - flat
 #*                                  to $workdir
     merge|merge-a*|mg)
@@ -1582,6 +1583,7 @@ EOF
         get_nodes
         process_nodes connect_node ${nodes[@]}
     ;;
+####TODO rename to fold/unfold ??
 #*  unmerge (umg)                   copy the content of $workdir back to the
 #*                                  storage directories - guess or ask..
     unmerge|umg)
@@ -1589,7 +1591,7 @@ EOF
         if [ $verbose -gt 0 ] ; then
             printf "\e[1;39mSynchronizing back to storage dirs\e[0m\n"
         fi
-        process_nodes un_merge_all ${nodes[@]}
+        process_nodes unfold_all ${nodes[@]}
     ;;
     *)
         print_usage
