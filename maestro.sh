@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 1.1-7-gab95f09
+#** Version: v1.2
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -47,7 +47,7 @@ ansible_timeout="60"
 ansible_scp_if_ssh="True"
 
 # whether to ask or not before applying changes..
-force=0
+force=1
 
 # for status mode concentrate on this ip protocol
 ipprot="-4"
@@ -122,6 +122,7 @@ sys_tools=(
             ["_basename"]="/usr/bin/basename"
             ["_cat"]="/bin/cat"
             ["_cp"]="/bin/cp"
+            ["_diff"]="/usr/bin/diff"
             ["_dirname"]="/usr/bin/dirname"
             ["_find"]="/usr/bin/find"
             ["_git"]="/usr/bin/git"
@@ -302,16 +303,6 @@ while true ; do
         -i|--interactive)
             force=1
         ;;
-#*  --merge|-m mode                 specify how to merge, available modes:
-#*                                    custom    based on "re-merge-custom"
-#*                                    dir       nodename based dirs (default)
-#*                                    in        nodename infixed files
-#*                                    pre       nodename prefixed files
-#*                                    post      nodename postfixed files
-        -m|--merge)
-            shift
-            merge_mode=$1
-        ;;
 #*  --parser-test|-p                only output what would be fed to script
         -p|--parser-test)
             parser_dryrun=0
@@ -328,8 +319,8 @@ while true ; do
         -q|--quiet)
             verbose="0"
         ;;
-#*  --subdir-only-merge|-s          concentrate on this subdir only
-        -s|--subdir-only-merge)
+#*  --subdir-only|-s subdir         concentrate on this subdir only for merges
+        -s|--subdir-only|--subdir-only-merge)
             shift
             merge_only_this_subdir=$1
         ;;
@@ -636,8 +627,8 @@ reclass_parser='BEGIN {
 #                if (( mode != "none") && ( mode != "debops" )) {
                 if ( mode != "none") {
                     gsub("'"'"'", "")
-                    sub("- ", "")
-                    list=list "\n'"'"'" $0 "'"'"'"
+                    sub(" *- *", "")
+                    list=list "\n'"'"'"$0"'"'"'"
                 }
                 next
             }
@@ -1030,58 +1021,6 @@ re_merge_custom()
     done
 }
 
-re_merge_fix_in()
-{
-    #better safe than sorry
-    [ -n "$1" ] || error "ERROR: Source directory was empty!"
-    [ "${1/*$n*/XXX}" == "XXX" ] || error "ERROR: Source directory was $1"
-# TODO maybe we want to ask for what to do with links..
-    for f in $($_find $1 -type f) ; do
-        basename=$($_basename $f)
-        fullpath=${f%%$basename}
-        targetpath=${fullpath/$1}
-        suffix=$(echo $basename | $_grep '\w\.' | $_sed 's/.*\.//')
-        prefix=${basename/.$suffix}
-        [ -n "$suffix" ] && suffix=".$suffix"
-        $_mv $f $workdir/$targetpath/${prefix}.${n}$suffix
-    done
-}
-
-re_merge_fix_pre()
-{
-    #better safe than sorry
-    [ -n "$1" ] || error "ERROR: Source directory was empty!"
-    [ "${1/*$n*/XXX}" == "XXX" ] || error "ERROR: Source directory was $1"
-# TODO maybe we want to ask for what to do with links..
-    for f in $($_find $1 -type f) ; do
-        basename=$($_basename $f)
-        fullpath=${f%%$basename}
-        targetpath=${fullpath/$1}
-        $_mv $f $workdir/$targetpath/${n}.${basename}
-    done
-}
-
-re_merge_fix_post()
-{
-    #better safe than sorry
-    [ -n "$1" ] || error "ERROR: Source directory was empty!"
-    [ "${1/*$n*/XXX}" == "XXX" ] || error "ERROR: Source directory was $1"
-# TODO maybe we want to ask for what to do with links..
-    for f in $($_find $1 -type f) ; do
-        basename=$($_basename $f)
-        fullpath=${f%%$basename}
-        targetpath=${fullpath/$1}
-        $_mv $f $workdir/$targetpath/${basename}.${in}
-    done
-}
-
-re_merge_exceptions_first()
-{
-    for f in ${remergedirect[@]} ; do
-        $_mv $2/$1/$f $2/$f
-    done
-}
-
 merge_all()
 {
     if [ $verbose -gt 0 ] ; then
@@ -1093,42 +1032,136 @@ merge_all()
     src_subdir=""
     trgt_subdir=""
     if [ -n "$merge_only_this_subdir" ] ; then
+        if [ $verbose -gt 1 ] ; then
+            printf "    - focus on '$merge_only_this_subdir' only\n"
+        fi
         src="$merge_only_this_subdir"
         trgt="$merge_only_this_subdir"
     fi
     case "$merge_mode" in
-        dir|in|post|pre|custom)
+        dir|custom)
             for d in ${storagedirs[@]} ; do
                 do_sync "$d/$src/" "$workdir/$n/$trgt/"
             done
         ;;&
         dir)
         ;;
-        in|post|pre)
-echo "TODO: what shall we do here?"
-echo "disabled for now - as there are issues with one single workdir"
-echo "and custom-merge is more flexible anyway.."
-exit
-            t="$workdir/$n/"
-            for d in $($_find $t -type d) ; do
-                $_mkdir -p $workdir/${d/$t/}
-            done
-            re_merge_exceptions_first $n $workdir
-            re_merge_fix_$merge_mode $t
-
-            t="${t}*"
-# TODO maybe we want to ask for what to do with links..
-            for f in $($_find $t -type l) ; do
-                $_rm $f
-            done
-            for d in $($_find $t -depth -type d) ; do
-                $_rmdir ${d}
-            done
-        ;;
         custom)
             re_merge_custom $workdir/$n/
         ;;
         *)
+            die "merge mode '$merge_mode' is not supported.."
+        ;;
+    esac
+}
+
+unfold_all()
+{
+    if [ $verbose -gt 0 ] ; then
+        printf "\e[1;39m  - $1\e[0;39m\n"
+    fi
+    if [ ! -d "$workdir" ] ; then
+        die "Source directory '$workdir' does not exist!"
+    fi
+    src_subdir=""
+    trgt_subdir=""
+    if [ -n "$merge_only_this_subdir" ] ; then
+        if [ $verbose -gt 1 ] ; then
+            printf "    - focus on '$merge_only_this_subdir' only\n"
+        fi
+        src="$merge_only_this_subdir"
+        trgt="$merge_only_this_subdir"
+    fi
+    case "$merge_mode" in
+        dir|custom)
+            for f in $($_find "$workdir/$n/$src/" -type f) ; do
+                if [ $verbose -gt 1 ] ; then
+                    printf "    processing $f\n"
+                fi
+                t=${f/$workdir\/$n\/$trgt/}
+                let i=${#storagedirs[@]}-1
+                if [ -f "${storagedirs[$i]}/$t" ] ; then
+                    rv=0
+                    $_diff -q "$f" "${storagedirs[$i]}/$t" 2>&1 >/dev/null || rv=$?
+                    if [ 0 -eq $rv ] ; then
+                        if [ $verbose -gt 2 ] ; then
+                            printf "    No changes found at ${storagedirs[$i]}/$t\n"
+                        fi
+                        continue
+                    elif [ 1 -eq $rv ] ; then
+                        printf "      found '$f' in last/host storage dir "
+                        printf " '${storagedirs[$i]}/$t', merging!\n"
+                        $_cp "$f" "${storagedirs[$i]}/$t"
+                        continue
+                    fi
+                else
+                    answer=n
+                    unmerge_done=1
+                    for (( j=i-1 ; j>=0 ; j-- )) ; do
+                        if [ -f "${storagedirs[$j]}/$t" ] ; then
+                            rv=0
+                            $_diff -q "$f" "${storagedirs[$j]}/$t" 2>&1 >/dev/null || rv=$?
+                            if [ 0 -eq $rv ] ; then
+                                if [ $verbose -gt 2 ] ; then
+                                    printf "    No changes found at ${storagedirs[$j]}/$t\n"
+                                fi
+                                unmerge_done=0
+                                break
+                            elif [ 1 -eq $rv ] ; then
+                                printf "      found '$f' in storage dir "
+                                printf " '${storagedirs[$i]}/$t'"
+                                if [ 0 -eq "$force" ] ; then
+                                    printf ", merging (--force)!\n"
+                                    answer=0
+                                else
+                                    printf ", do you want to merge? [yN] "
+                                    read answer
+                                fi
+                            fi
+                            case $answer in
+                                y*|Y*)
+                                    $_cp "$f" "${storagedirs[$j]}/$t"
+                                    unmerge_done=0
+                                    break
+                                ;;
+                                *)
+                                    printf "      .. not merging.\n"
+                                ;;
+                            esac
+                        fi
+                    done
+                    if [ 0 -ne "$unmerge_done" ] ; then
+                        if [ 0 -eq "$force" ] ; then
+                            printf "No target found, use '-i' for interactive"
+                            printf " mode.\n"
+                            continue
+                        fi
+                        printf "File \e[1m'$f'\e[0m is not persisted yet.\n"
+                        printf "Which directory do you prefer for storage?\n"
+                        printf "  0) none\n"
+                        for (( i=0 ; i<${#storagedirs[@]} ; i++ )) ; do
+                            let j=i+1
+                            printf "  $j) ${storagedirs[$i]}\n"
+                        done
+                        read answer
+                        if [ -z "$answer" ] || [ $answer -eq 0 ] ; then
+                            noop
+                            continue
+                        else
+                            let answer--
+                            $_mkdir -p "${storagedirs[$answer]}/${t%/*}"
+                            $_cp "$f" "${storagedirs[$answer]}/$t"
+                        fi
+                    fi
+                fi
+            done
+        ;;&
+        dir)
+        ;;
+        custom)
+            re_merge_custom $workdir/$n/
+        ;;  
+        *)  
             die "merge mode '$merge_mode' is not supported.."
         ;;
     esac
@@ -1422,11 +1455,6 @@ EOF
         get_nodes
         process_nodes list_node_re_merge_custom ${nodes[@]}
     ;;
-##*  list-merge-exceptions (lsme)    show exceptions for storage merge modes
-#    lsme|list-merge-e*)
-#        get_nodes
-#        process_nodes list_node_re_merge_exceptions ${nodes[@]}
-#    ;;
 #*  list-storage (lss)              show storage directories (for merging)
     lss|list-storage)
         get_nodes
@@ -1437,7 +1465,8 @@ EOF
         get_nodes
         process_nodes list_node_type ${nodes[@]}
     ;;
-#*  merge-all (mg)                  just merge all storage directories - flat
+####TODO rename to fold/unfold ??
+#*  merge (mg)                      just merge all storage directories - flat
 #*                                  to $workdir
     merge|merge-a*|mg)
         get_nodes
@@ -1455,31 +1484,6 @@ EOF
         merge_mode="custom"
         process_nodes merge_all ${nodes[@]}
     ;;
-##*  merge-pre (mpr)                 merge storage dirs and prefix with hostname
-##*                                  to $workdir
-#    merge-pr*|mpr)
-#        get_nodes
-#        merge_mode="pre"
-#        process_nodes merge_all ${nodes[@]}
-#    ;;
-##*  merge-in (mi)                   merge storage dirs and infix with hostname
-##*                                  to $workdir
-#    merge-i*|mi)
-#        get_nodes
-#        merge_mode="in"
-#        process_nodes merge_all ${nodes[@]}
-#    ;;
-##*  merge-post (mpo)                merge storage dirs and postfix with hostname
-##*                                  to $workdir
-#    merge-po*|mpo)
-#        get_nodes
-#        merge_mode="post"
-#        process_nodes merge_all ${nodes[@]}
-#    ;;
-##*  re-merge                        remerge as specified in '--merge mode'
-#    rem|re-merge*)
-#        process_nodes re-merge ${nodes[@]}
-#    ;;
 #*  reclass                         just wrap reclass
     rec*)
         if [ -n "$nodefilter" ] ; then
@@ -1598,6 +1602,16 @@ EOF
     ss|status)
         get_nodes
         process_nodes connect_node ${nodes[@]}
+    ;;
+####TODO rename to fold/unfold ??
+#*  unmerge (umg)                   copy the content of $workdir back to the
+#*                                  storage directories - guess or ask..
+    unmerge|umg)
+        get_nodes
+        if [ $verbose -gt 0 ] ; then
+            printf "\e[1;39mSynchronizing back to storage dirs\e[0m\n"
+        fi
+        process_nodes unfold_all ${nodes[@]}
     ;;
     *)
         print_usage
