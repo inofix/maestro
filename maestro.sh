@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2
+#** Version: v1.2-1-gc8bc0d2
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1331,6 +1331,12 @@ case $1 in
         done
         printf "\e[0;39m"
     ;;
+#*  help                            print this help
+    help)
+        print_help
+        exit 0
+    ;;
+#*  --host|-H host                  only process a certain host
 #*  init [directory]                create an environemnt with all the
 #*                                  repos defined in the config, in order
 #*                                  to get a running knowledge base.
