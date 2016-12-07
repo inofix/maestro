@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2
+#** Version: v1.2-3-g4e5801e
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1172,7 +1172,7 @@ nodes=()
 
 #* actions:
 case $1 in
-    ansible-fetch*|ansible-put*|ansible-play*|play|put|fetch)
+    ansible-fetch*|ansible-put*|ansible-play*|play|playloop|ploop|put|fetch)
         get_nodes
         [ -n "$_ansible" ] || error "Missing system tool: ansible."
         [ -n "$_ansible_playbook" ] ||
@@ -1248,7 +1248,7 @@ case $1 in
 #*                                  custom plays stored in the config
 #*                                  file as '$playbookdir'.
 #*                                  'play' name of the play
-    ansible-play*|play)
+    ansible-play|ansible-playbook|play)
         p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${2}.yml)"
         [ -n "$p" ] ||
             error "There is no play called ${2}.yml in ${playbookdirs[@]}"
@@ -1258,6 +1258,29 @@ case $1 in
             read
         fi
         $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $p
+    ;;
+#*  ansible-play-loop (ploop) play itemname itemsparameter:..
+#*                                  wrapper to ansible which also includes
+#*                                  custom plays stored in the config
+#*                                  file as '$playbookdir'. Unlike 'play'
+#*                                  above it will be run multiple times, for
+#*                                  every 'itemsparameter' as 'itemname' passed
+#*                                  on to 'play', name of the play
+    ansible-play-loop|playloop|ploop)
+        itemname=$3
+        itemparams=$4
+        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${2}.yml)"
+        [ -n "$p" ] ||
+            error "There is no play called ${2}.yml in ${playbookdirs[@]}"
+        for iparam in ${itemparams//:/ } ; do
+
+            echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e 'workdir="$workdir" $itemname="{{ $iparam }}" $ansibleextravars' $ansibleoptions $p"
+            if [ 0 -ne "$force" ] ; then
+                echo "Press <Enter> to continue <Ctrl-C> to quit"
+                read
+            fi
+            $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e "workdir='$workdir' $itemname='{{ $iparam }}' $ansibleextravars" $ansibleoptions $p
+        done
     ;;
 #*  ansible-put src dest            ansible oversimplified copy module wrapper
 #*                                  (prefer ansible-play instead)
@@ -1330,6 +1353,11 @@ case $1 in
             done
         done
         printf "\e[0;39m"
+    ;;
+#*  help                            print this help
+    help)
+        print_help
+        exit 0
     ;;
 #*  init [directory]                create an environemnt with all the
 #*                                  repos defined in the config, in order
