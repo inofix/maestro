@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-3-g4e5801e
+#** Version: v1.2-4-gedf6b1c
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1365,7 +1365,6 @@ case $1 in
     init|reinit)
         shift
         $_mkdir -p "$workdir"
-        [ -f "$conffile" ] || error "Please provide a config file."
         for g in ${!toclone[@]} ; do
             git_dest=""
             if [ -n "${inventorydirs[$g]}" ] ; then
