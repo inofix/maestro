@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-4-gedf6b1c
+#** Version: v1.2-5-g1cb46b2
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -45,6 +45,7 @@ conffile=maestro
 ansible_managed="Ansible managed: {file} modified on %Y-%m-%d %H:%M:%S by {uid} on {host}"
 ansible_timeout="60"
 ansible_scp_if_ssh="True"
+ansible_galaxy_roles=".ansible-galaxy-roles"
 
 # whether to ask or not before applying changes..
 force=1
@@ -1410,7 +1411,7 @@ EOF
 hostfile    = $inventorydir/hosts
 timeout     = $ansible_timeout
 ansible_managed = "$ansible_managed"
-roles_path  = $maestrodir/.ansible-galaxy-roles
+roles_path  = $maestrodir/$ansible_galaxy_roles
 
 [ssh_connection]
 scp_if_ssh = $Ansible_scp_if_ssh
@@ -1603,7 +1604,11 @@ EOF
     search-in-playbooks|search-play*)
         shift
         for d in ${playbookdirs[@]} ; do
-            printf "\e[1;33mIn $d we found the string in these plays:\e[0m\n"
+            printf "\e[1;33mIn $d we found the string here:\e[0m\n"
+            $_grep --color -Hn -R -e "{{[a-zA-Z0-9_+ ]*${1}[a-zA-Z0-9_+ ]*}}" $d || true
+        done
+        for d in $maestrodir/$ansible_galaxy_roles/* ; do
+            printf "\e[1;33mIn $d we found the string here:\e[0m\n"
             $_grep --color -Hn -R -e "{{[a-zA-Z0-9_+ ]*${1}[a-zA-Z0-9_+ ]*}}" $d || true
         done
     ;;
