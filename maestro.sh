@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-5-g1cb46b2
+#** Version: v1.2-6-g5e0a23e
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -385,6 +385,29 @@ fi
 for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
 done
+
+reclass_custom_parser='BEGIN {
+#                num_spaces=length("'$var_to_parse'")
+#                gsub("\\w*", "", "'$var_to_parse'")
+#                num_spaces=-length("'$var_to_parse'")
+                mode=1
+#                target="'$var_to_parse'"
+#                gsub("\\w*",
+#                offset="'$var_to_parse'"
+            }
+            #sanitize input a little
+            /<|>|\$|\|`/ {
+                next
+            }
+            /^parameters:/ {
+                mode=0
+            }
+            /^\w/ {
+                mode=1
+            }
+            /^  resource:/ {
+
+            }'
 
 reclass_parser='BEGIN {
                 hostname="'$hostname'"
@@ -798,6 +821,13 @@ parse_node()
     fi
 }
 
+parse_node_custom_var()
+{
+    var_to_parse="$1"
+    $_reclass -b $inventorydir -n $1 |
+        $_awk "$reclass_custom_parser"
+}
+
 # First call to reclass to get an overview of the hosts available
 get_nodes()
 {
@@ -1161,8 +1191,8 @@ unfold_all()
         ;;
         custom)
             re_merge_custom $workdir/$n/
-        ;;  
-        *)  
+        ;;
+        *)
             die "merge mode '$merge_mode' is not supported.."
         ;;
     esac
@@ -1513,7 +1543,7 @@ EOF
         process_nodes merge_all ${nodes[@]}
     ;;
 #*  reclass                         just wrap reclass
-    rec*)
+    rec|reclass)
         if [ -n "$nodefilter" ] ; then
             nodefilter=$($_find -L $inventorydir/nodes/ -name "$nodefilter" -o -name "${nodefilter}\.*" | $_sed -e 's;.yml;;' -e 's;.*/;;')
 
@@ -1538,6 +1568,14 @@ EOF
         else
             $_reclass -b $inventorydir -u $nodes_uri $reclassmode
         fi
+    ;;
+#*  reclass-show-parameters         print all parameters set in reclass
+    reclass-show*)
+        noop
+    ;;
+#*  reclass-search-parameter        print a certain parameter set in reclass
+    reclass-search*)
+        parse_node_custom_var "$1"
     ;;
 #*  show-summary                    show variables used here from the config and reclass
     show-sum*)
