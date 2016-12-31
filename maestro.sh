@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-6-g5e0a23e
+#** Version: v1.2-7-g405a368
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -387,13 +387,13 @@ for t in ${danger_tools[@]} ; do
 done
 
 reclass_custom_parser='BEGIN {
-#                num_spaces=length("'$var_to_parse'")
-#                gsub("\\w*", "", "'$var_to_parse'")
-#                num_spaces=-length("'$var_to_parse'")
+#                num_spaces=length($var_to_parse)
+#                gsub("\\w*", "", $var_to_parse)
+#                num_spaces=-length($var_to_parse)
                 mode=1
-#                target="'$var_to_parse'"
+#                target="var_to_parse
 #                gsub("\\w*",
-#                offset="'$var_to_parse'"
+#                offset=$var_to_parse
             }
             #sanitize input a little
             /<|>|\$|\|`/ {
@@ -410,9 +410,6 @@ reclass_custom_parser='BEGIN {
             }'
 
 reclass_parser='BEGIN {
-                hostname="'$hostname'"
-                domainname="'$domainname'"
-                fqdn="'$n'"
                 split(p_keys, project_keys, ";")
                 split(p_vals, project_vals, ";")
                 for (i=1;i<=p_len;i++) {
@@ -428,9 +425,6 @@ reclass_parser='BEGIN {
                 next
             }
             /{{ .* }}/ {
-                gsub("{{ hostname }}", hostname)
-                gsub("{{ domainname }}", domainname)
-                gsub("{{ fqdn }}", fqdn)
                 for (var in projects) {
                     gsub("{{ "var" }}", projects[var])
                 }
