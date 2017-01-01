@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-5-g1cb46b2
+#** Version: v1.2-8-g10e1225
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -386,10 +386,46 @@ for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
 done
 
+reclass_param_parser='BEGIN {
+                mode="none"
+                spaces=target_var
+                sub("\\w.*", "", spaces)
+                other_var="^"spaces"\\w.*:"
+            }
+            /^parameters:$/ {
+                mode="param"
+                next
+            }
+            /^\w.*$/ {
+                next
+                mode="none"
+                next
+            }
+            {
+                if ( mode == "none" ) {
+                    next
+                }
+#                print $0
+            }
+            $0 ~ target_var {
+                mode="target"
+                next
+            }
+            $0 ~ other_var {
+                mode="param"
+                next
+            }
+            {
+                if ( mode == "target" ) {
+                    sub("^"spaces, "")
+                    answer=answer"\n"$0
+                }
+            }
+            END {
+                print answer
+            }'
+
 reclass_parser='BEGIN {
-                hostname="'$hostname'"
-                domainname="'$domainname'"
-                fqdn="'$n'"
                 split(p_keys, project_keys, ";")
                 split(p_vals, project_vals, ";")
                 for (i=1;i<=p_len;i++) {
@@ -405,9 +441,6 @@ reclass_parser='BEGIN {
                 next
             }
             /{{ .* }}/ {
-                gsub("{{ hostname }}", hostname)
-                gsub("{{ domainname }}", domainname)
-                gsub("{{ fqdn }}", fqdn)
                 for (var in projects) {
                     gsub("{{ "var" }}", projects[var])
                 }
@@ -798,6 +831,12 @@ parse_node()
     fi
 }
 
+parse_node_custom_var()
+{
+    $_reclass -b $inventorydir -n $1 |
+        $_awk -v target_var="$target_var" "$reclass_param_parser"
+}
+
 # First call to reclass to get an overview of the hosts available
 get_nodes()
 {
@@ -1161,8 +1200,8 @@ unfold_all()
         ;;
         custom)
             re_merge_custom $workdir/$n/
-        ;;  
-        *)  
+        ;;
+        *)
             die "merge mode '$merge_mode' is not supported.."
         ;;
     esac
@@ -1513,7 +1552,7 @@ EOF
         process_nodes merge_all ${nodes[@]}
     ;;
 #*  reclass                         just wrap reclass
-    rec*)
+    rec|reclass)
         if [ -n "$nodefilter" ] ; then
             nodefilter=$($_find -L $inventorydir/nodes/ -name "$nodefilter" -o -name "${nodefilter}\.*" | $_sed -e 's;.yml;;' -e 's;.*/;;')
 
@@ -1538,6 +1577,17 @@ EOF
         else
             $_reclass -b $inventorydir -u $nodes_uri $reclassmode
         fi
+    ;;
+#*  reclass-show-parameters         print all parameters set in reclass
+    reclass-show*)
+        noop
+    ;;
+#*  reclass-search-parameter        print a certain parameter set in reclass
+    reclass-search*)
+        shift
+        target_var="$1"
+        get_nodes
+        process_nodes parse_node_custom_var ${nodes[@]}
     ;;
 #*  show-summary                    show variables used here from the config and reclass
     show-sum*)
