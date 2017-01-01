@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-7-g405a368
+#** Version: v1.2-8-g10e1225
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -386,27 +386,43 @@ for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
 done
 
-reclass_custom_parser='BEGIN {
-#                num_spaces=length($var_to_parse)
-#                gsub("\\w*", "", $var_to_parse)
-#                num_spaces=-length($var_to_parse)
-                mode=1
-#                target="var_to_parse
-#                gsub("\\w*",
-#                offset=$var_to_parse
+reclass_param_parser='BEGIN {
+                mode="none"
+                spaces=target_var
+                sub("\\w.*", "", spaces)
+                other_var="^"spaces"\\w.*:"
             }
-            #sanitize input a little
-            /<|>|\$|\|`/ {
+            /^parameters:$/ {
+                mode="param"
                 next
             }
-            /^parameters:/ {
-                mode=0
+            /^\w.*$/ {
+                next
+                mode="none"
+                next
             }
-            /^\w/ {
-                mode=1
+            {
+                if ( mode == "none" ) {
+                    next
+                }
+#                print $0
             }
-            /^  resource:/ {
-
+            $0 ~ target_var {
+                mode="target"
+                next
+            }
+            $0 ~ other_var {
+                mode="param"
+                next
+            }
+            {
+                if ( mode == "target" ) {
+                    sub("^"spaces, "")
+                    answer=answer"\n"$0
+                }
+            }
+            END {
+                print answer
             }'
 
 reclass_parser='BEGIN {
@@ -817,9 +833,8 @@ parse_node()
 
 parse_node_custom_var()
 {
-    var_to_parse="$1"
     $_reclass -b $inventorydir -n $1 |
-        $_awk "$reclass_custom_parser"
+        $_awk -v target_var="$target_var" "$reclass_param_parser"
 }
 
 # First call to reclass to get an overview of the hosts available
@@ -1569,7 +1584,10 @@ EOF
     ;;
 #*  reclass-search-parameter        print a certain parameter set in reclass
     reclass-search*)
-        parse_node_custom_var "$1"
+        shift
+        target_var="$1"
+        get_nodes
+        process_nodes parse_node_custom_var ${nodes[@]}
     ;;
 #*  show-summary                    show variables used here from the config and reclass
     show-sum*)
