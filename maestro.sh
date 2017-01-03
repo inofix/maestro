@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-8-g10e1225
+#** Version: v1.2-27-g18579b4
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -388,8 +388,10 @@ done
 
 reclass_param_parser='BEGIN {
                 mode="none"
-                spaces=target_var
-                sub("\\w.*", "", spaces)
+                split(target_var, target_vars, ":")
+                spaces="  "
+                i=1
+                target_var="^"spaces""target_vars[i]":"
                 other_var="^"spaces"\\w.*:"
             }
             /^parameters:$/ {
@@ -408,7 +410,15 @@ reclass_param_parser='BEGIN {
 #                print $0
             }
             $0 ~ target_var {
-                mode="target"
+                if ( i == length(target_vars) ) {
+                    mode="target"
+                    print $0
+                } else {
+                    i++
+                    spaces=spaces"  "
+                    target_var="^"spaces""target_vars[i]":"
+                    other_var="^"spaces"\\w.*:"
+                }
                 next
             }
             $0 ~ other_var {
@@ -417,8 +427,7 @@ reclass_param_parser='BEGIN {
             }
             {
                 if ( mode == "target" ) {
-                    sub("^"spaces, "")
-                    answer=answer"\n"$0
+                    answer=answer $0"\n"
                 }
             }
             END {
@@ -833,6 +842,7 @@ parse_node()
 
 parse_node_custom_var()
 {
+    list_node $n
     $_reclass -b $inventorydir -n $1 |
         $_awk -v target_var="$target_var" "$reclass_param_parser"
 }
@@ -1093,6 +1103,34 @@ merge_all()
             die "merge mode '$merge_mode' is not supported.."
         ;;
     esac
+}
+
+print_plain_reclass()
+{
+        if [ -n "$nodefilter" ] ; then
+            nodefilter=$($_find -L $inventorydir/nodes/ -name "$nodefilter" -o -name "${nodefilter}\.*" | $_sed -e 's;.yml;;' -e 's;.*/;;')
+
+            if [ -n "$nodefilter" ] ; then
+                reclassmode="-n $nodefilter"
+            else
+                error "The node does not seem to exist: $nodefilter"
+            fi
+        else
+            reclassmode="-i"
+        fi
+        if [ -n "$projectfilter" ] ; then
+            nodes_uri="$inventorydir/nodes/$projectfilter"
+            if [ ! -d "$nodes_uri" ] ; then
+                error "No such project dir: $nodes_uri"
+            fi
+        elif [ -n "$classfilter" ] ; then
+            error "Classes are not supported here, use project filter instead."
+        fi
+        if [ -z "$nodes_uri" ] ; then
+            $_reclass -b $inventorydir $nodes_uri $reclassmode
+        else
+            $_reclass -b $inventorydir -u $nodes_uri $reclassmode
+        fi
 }
 
 unfold_all()
@@ -1557,30 +1595,7 @@ EOF
     ;;
 #*  reclass                         just wrap reclass
     rec|reclass)
-        if [ -n "$nodefilter" ] ; then
-            nodefilter=$($_find -L $inventorydir/nodes/ -name "$nodefilter" -o -name "${nodefilter}\.*" | $_sed -e 's;.yml;;' -e 's;.*/;;')
-
-            if [ -n "$nodefilter" ] ; then
-                reclassmode="-n $nodefilter"
-            else
-                error "The node does not seem to exist: $nodefilter"
-            fi
-        else
-            reclassmode="-i"
-        fi
-        if [ -n "$projectfilter" ] ; then
-            nodes_uri="$inventorydir/nodes/$projectfilter"
-            if [ ! -d "$nodes_uri" ] ; then
-                error "No such project dir: $nodes_uri"
-            fi
-        elif [ -n "$classfilter" ] ; then
-            error "Classes are not supported here, use project filter instead."
-        fi
-        if [ -z "$nodes_uri" ] ; then
-            $_reclass -b $inventorydir $nodes_uri $reclassmode
-        else
-            $_reclass -b $inventorydir -u $nodes_uri $reclassmode
-        fi
+        print_plain_reclass
     ;;
 #*  reclass-show-parameters         print all parameters set in reclass
     reclass-show*)
