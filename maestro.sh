@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-27-g18579b4
+#** Version: v1.2-28-gf9f81f2
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -407,7 +407,6 @@ reclass_param_parser='BEGIN {
                 if ( mode == "none" ) {
                     next
                 }
-#                print $0
             }
             $0 ~ target_var {
                 if ( i == length(target_vars) ) {
@@ -840,9 +839,20 @@ parse_node()
     fi
 }
 
-parse_node_custom_var()
+parse_node_whole_reclass_list()
+{
+    list_node $0
+    $_reclass -b $inventorydir -n $1 | $_grep -v -e "^a" -e "^c" -e "^e" -e "^-"
+}
+
+parse_node_custom_var_list()
 {
     list_node $n
+    parse_node_custom_var $n
+}
+
+parse_node_custom_var()
+{
     $_reclass -b $inventorydir -n $1 |
         $_awk -v target_var="$target_var" "$reclass_param_parser"
 }
@@ -1599,14 +1609,15 @@ EOF
     ;;
 #*  reclass-show-parameters         print all parameters set in reclass
     reclass-show*)
-        noop
+        get_nodes
+        process_nodes parse_node_whole_reclass_list ${nodes[@]}
     ;;
 #*  reclass-search-parameter        print a certain parameter set in reclass
     reclass-search*)
         shift
         target_var="$1"
         get_nodes
-        process_nodes parse_node_custom_var ${nodes[@]}
+        process_nodes parse_node_custom_var_list ${nodes[@]}
     ;;
 #*  show-summary                    show variables used here from the config and reclass
     show-sum*)
