@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-28-gf9f81f2
+#** Version: v1.2-29-g08aa909
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -386,7 +386,20 @@ for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
 done
 
-reclass_param_parser='BEGIN {
+reclass_parameter_parser='BEGIN {
+                mode="none"
+            }
+            /^parameters:$/ {
+                mode="param"
+                next
+            }
+            {
+                if ( mode == "param" ) {
+                    print $0
+                }
+            }'
+
+reclass_custom_parameter_parser='BEGIN {
                 mode="none"
                 split(target_var, target_vars, ":")
                 spaces="  "
@@ -842,7 +855,7 @@ parse_node()
 parse_node_whole_reclass_list()
 {
     list_node $0
-    $_reclass -b $inventorydir -n $1 | $_grep -v -e "^a" -e "^c" -e "^e" -e "^-"
+    $_reclass -b $inventorydir -n $1 | $_awk "$reclass_parameter_parser"
 }
 
 parse_node_custom_var_list()
@@ -854,7 +867,7 @@ parse_node_custom_var_list()
 parse_node_custom_var()
 {
     $_reclass -b $inventorydir -n $1 |
-        $_awk -v target_var="$target_var" "$reclass_param_parser"
+        $_awk -v target_var="$target_var" "$reclass_custom_parameter_parser"
 }
 
 # First call to reclass to get an overview of the hosts available
