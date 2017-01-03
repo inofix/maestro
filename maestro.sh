@@ -198,20 +198,6 @@ error()
 
 ## logic ##
 
-## first set the system tools
-fail=1
-for t in ${!sys_tools[@]} ; do
-    if [ -x "${sys_tools[$t]##* }" ] ; then
-        export ${t}="${sys_tools[$t]}"
-    else
-        fail=0
-        echo "Missing system tool: '${sys_tools[$t]##* }' must be installed."
-    fi
-done
-if [ $fail -eq 0 ] ; then
-    die "Please install the above mentioned tools first.."
-fi
-
 #* config file hierarchy (default $conffile=maestro):
 #*  * first try to source the systemwide config in /etc/maestro
 [ ! -f "/etc/$conffile" ] || . "/etc/$conffile"
@@ -227,6 +213,20 @@ if [ -f "$conffile" ] ; then
     . "$conffile"
 elif [ -f ".$conffile" ] ; then
     . ".$conffile"
+fi
+
+## first set the system tools
+fail=1
+for t in ${!sys_tools[@]} ; do
+    if [ -x "${sys_tools[$t]##* }" ] ; then
+        export ${t}="${sys_tools[$t]}"
+    else
+        fail=0
+        echo "Missing system tool: '${sys_tools[$t]##* }' must be installed."
+    fi
+done
+if [ $fail -eq 0 ] ; then
+    die "Please install the above mentioned tools first.."
 fi
 
 # the merge of the above inventories will be stored here
