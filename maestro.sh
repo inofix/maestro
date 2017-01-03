@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-29-g08aa909
+#** Version: v1.2-30-g4919681
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -706,7 +706,7 @@ ansible_connection_test()
         printf "\e[1;39m$n\e[0m has ansible:ssh_common_args set to '${ansible_meta['ssh_common_args']}'.\n"
         printf "         Please check your ssh configs for that host if you encounter problems.\n"
     fi
-    for l in connect_timeout use_scp ; do
+    for l in connect_timeout scp_if_ssh ; do
         if [ -n "${ansible_meta[$l]}" ] ; then
             printf "\e[1;33mWarning: "
             printf "\e[1;39m$n\e[0m has ansible:$l set to '${ansible_meta[$l]}'.\n"
