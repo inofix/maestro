@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-27-g18579b4
+#** Version: v1.2-29-g08aa909
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -386,7 +386,20 @@ for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
 done
 
-reclass_param_parser='BEGIN {
+reclass_parameter_parser='BEGIN {
+                mode="none"
+            }
+            /^parameters:$/ {
+                mode="param"
+                next
+            }
+            {
+                if ( mode == "param" ) {
+                    print $0
+                }
+            }'
+
+reclass_custom_parameter_parser='BEGIN {
                 mode="none"
                 split(target_var, target_vars, ":")
                 spaces="  "
@@ -407,7 +420,6 @@ reclass_param_parser='BEGIN {
                 if ( mode == "none" ) {
                     next
                 }
-#                print $0
             }
             $0 ~ target_var {
                 if ( i == length(target_vars) ) {
@@ -840,11 +852,22 @@ parse_node()
     fi
 }
 
-parse_node_custom_var()
+parse_node_whole_reclass_list()
+{
+    list_node $0
+    $_reclass -b $inventorydir -n $1 | $_awk "$reclass_parameter_parser"
+}
+
+parse_node_custom_var_list()
 {
     list_node $n
+    parse_node_custom_var $n
+}
+
+parse_node_custom_var()
+{
     $_reclass -b $inventorydir -n $1 |
-        $_awk -v target_var="$target_var" "$reclass_param_parser"
+        $_awk -v target_var="$target_var" "$reclass_custom_parameter_parser"
 }
 
 # First call to reclass to get an overview of the hosts available
@@ -1599,14 +1622,15 @@ EOF
     ;;
 #*  reclass-show-parameters         print all parameters set in reclass
     reclass-show*)
-        noop
+        get_nodes
+        process_nodes parse_node_whole_reclass_list ${nodes[@]}
     ;;
 #*  reclass-search-parameter        print a certain parameter set in reclass
     reclass-search*)
         shift
         target_var="$1"
         get_nodes
-        process_nodes parse_node_custom_var ${nodes[@]}
+        process_nodes parse_node_custom_var_list ${nodes[@]}
     ;;
 #*  show-summary                    show variables used here from the config and reclass
     show-sum*)
