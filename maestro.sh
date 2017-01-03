@@ -1360,7 +1360,7 @@ case $1 in
         print_help
         exit 0
     ;;
-#*  init [directory]                create an environemnt with all the
+#*  init                            create an environemnt with all the
 #*                                  repos defined in the config, in order
 #*                                  to get a running knowledge base.
     init|reinit)
