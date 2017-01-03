@@ -1362,31 +1362,35 @@ case $1 in
     ;;
 #*  init                            create an environemnt with all the
 #*                                  repos defined in the config, in order
-#*                                  to get a running knowledge base.
+#*                                  to get a running knowledge base
+#*  reinit                          update reclass environment without
+#*                                  pulling repos
     init|reinit)
         shift
         $_mkdir -p "$workdir"
-        for g in ${!toclone[@]} ; do
-            git_dest=""
-            if [ -n "${inventorydirs[$g]}" ] ; then
-                git_dest="${inventorydirs[$g]}"
-            elif [ -n "${playbookdirs[$g]}" ] ; then
-                git_dest="${playbookdirs[$g]}"
-            elif [ -n "${localdirs[$g]}" ] ; then
-                git_dest="${localdirs[$g]}"
-            else
-                error "there is no corresponding directory defined" \
-                      "in your config for $g"
-            fi
-            if [ -d "$git_dest/.git" ] ; then
-                echo "update repository $g"
-                $_git -C "$git_dest" pull
-            else
-                $_mkdir -p $git_dest
-                [ -n "${toclone[$g]}" ] || continue
-                $_git clone "${toclone[$g]}" "$git_dest"
-            fi
-        done
+        if [ $1 = init ] ; then
+            for g in ${!toclone[@]} ; do
+                git_dest=""
+                if [ -n "${inventorydirs[$g]}" ] ; then
+                    git_dest="${inventorydirs[$g]}"
+                elif [ -n "${playbookdirs[$g]}" ] ; then
+                    git_dest="${playbookdirs[$g]}"
+                elif [ -n "${localdirs[$g]}" ] ; then
+                    git_dest="${localdirs[$g]}"
+                else
+                    error "there is no corresponding directory defined" \
+                          "in your config for $g"
+                fi
+                if [ -d "$git_dest/.git" ] ; then
+                    echo "update repository $g"
+                    $_git -C "$git_dest" pull
+                else
+                    $_mkdir -p $git_dest
+                    [ -n "${toclone[$g]}" ] || continue
+                    $_git clone "${toclone[$g]}" "$git_dest"
+                fi
+            done
+        fi
         echo "Re-create the inventory. Note: there will be warnings for duplicates"
         echo "etc. "
         $_mkdir -p $inventorydir/{nodes,classes}
