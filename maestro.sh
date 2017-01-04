@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-30-g4919681
+#** Version: v1.2-35-g42960bc
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -99,6 +99,11 @@ ansibleoptions=""
 
 # how much feedback to give
 verbose="1"
+
+# what files are to be ignored on 'unmerge'
+unmerge_ignore=(
+    "_packages.wiki"
+)
 
 ### }}}
 
@@ -1175,7 +1180,11 @@ unfold_all()
     fi
     case "$merge_mode" in
         dir|custom)
-            for f in $($_find "$workdir/$n/$src/" -type f) ; do
+            ignore_these=""
+            for f in ${unmerge_ignore[@]} ; do
+                ignore_these="$ignore_these -not -name $f"
+            done
+            for f in $($_find "$workdir/$n/$src/" -type f $ignore_these) ; do
                 if [ $verbose -gt 1 ] ; then
                     printf "    processing $f\n"
                 fi
