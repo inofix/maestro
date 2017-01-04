@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-37-g15ce291
+#** Version: v1.2-38-g9f5eea5
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -410,7 +410,7 @@ reclass_custom_parameter_parser='BEGIN {
                 spaces="  "
                 i=1
                 target="^"spaces""target_vars[i]":"
-                deeper="^"spaces" "
+                deeper="^"spaces"[ -] "
             }
             /^parameters:$/ {
                 mode="param"
@@ -436,7 +436,7 @@ reclass_custom_parameter_parser='BEGIN {
                     spaces=spaces"  "
                     target="^"spaces""target_vars[i]":"
                     target_string=""target_string""$0
-                    deeper="^"spaces" "
+                    deeper="^"spaces"[ -] "
                 }
                 next
             }
