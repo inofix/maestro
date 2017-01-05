@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-40-ga3b0dae
+#** Version: v1.2-40-g304c4b4
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -410,7 +410,7 @@ reclass_custom_parameter_parser='BEGIN {
                 spaces="  "
                 i=1
                 target="^"spaces""target_vars[i]":"
-                deeper="^"spaces" "
+                deeper="^"spaces"[ -] "
             }
             /^parameters:$/ {
                 mode="param"
@@ -427,14 +427,16 @@ reclass_custom_parameter_parser='BEGIN {
                 }
             }
             $0 ~ target {
+                sub("^\\s*", "")
                 if ( i == length(target_vars) ) {
                     mode="target"
-                    answer="  "target_var"\n"
+                    answer=answer"  "target_string""$0"\n"
                 } else {
                     i++
                     spaces=spaces"  "
                     target="^"spaces""target_vars[i]":"
-                    deeper="^"spaces" "
+                    target_string=""target_string""$0
+                    deeper="^"spaces"[ -] "
                 }
                 next
             }
@@ -472,7 +474,6 @@ reclass_parser='BEGIN {
                 }
             }
             !/^ *- / {
-#print "we_are_here="metamode"-"mode
                 tmp=$0
                 # compare the number of leading spaces divided by 2 to
                 # the number of colons in metamode to decide if we are
