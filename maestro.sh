@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-39-gc031098
+#** Version: v1.2-40-g304c4b4
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -731,7 +731,10 @@ connect_node()
     remote_os_name=${remote_os[2]}
     remote_os_release=${remote_os[3]}
     remote_os_codename=${remote_os[4]}
-    answer0="${remote_os[1]} ${remote_os[2]} ${remote_os[3]} ${remote_os[4]}"
+    if [ ${#remote_os[@]} -gt 5 ]; then
+        remote_os_codename="${remote_os_codename} ${remote_os[5]}"
+    fi
+    answer0="${remote_os_distro} ${remote_os_name} ${remote_os_release} ${remote_os_codename}"
     if [ $retval -gt 127 ] ; then
         printf " \e[1;31m${answer0}\n"
     elif [ $retval -gt 0 ] ; then
