@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-40-g304c4b4
+#** Version: v1.2-45-g8108842
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -585,6 +585,14 @@ reclass_parser='BEGIN {
                 }
                 next
             }
+            /^  host__type_human_readable:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  l=length($1)
+                  print "hosttypeh=\""substr($0, l+4)"\""
+                }
+                next
+            }
             /^  role:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
@@ -812,6 +820,8 @@ re_define_parsed_variables()
     hostlocation=""
 #*** String:                parameters.host__type
     hosttype=""
+#*** String:                parameters.host__type_human_readable
+    hosttypeh=""
 #*** String:                parameters.os__codename
     os_codename=""
 #*** String:                parameters.os__distro
@@ -1006,12 +1016,12 @@ list_node_re_merge_custom()
 list_node_type()
 {
     list_node $n
-    printf "\e[0;33m This host is a \e[1;33m${hosttype}\e[0;33m.\n"
+    printf "\e[0;33m This host is a \e[1;33m${hosttypeh} (${hosttype})\e[0;33m.\n"
     [ -n "$hostinfrastructure" ] &&
         printf " It is running on \e[1;33m${hostinfrastructure}\e[0;33m.\n" ||
         true
     [ -n "$hostlocation" ] &&
-        printf " The ${hosttype} is located at "
+        printf " The ${hosttypeh} is located at "
         printf "\e[1;33m$hostlocation\e[0;33m.\n" ||
         true
 }
