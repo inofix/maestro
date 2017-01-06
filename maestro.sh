@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-45-g8108842
+#** Version: v1.2-46-g4601afc
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -561,11 +561,27 @@ reclass_parser='BEGIN {
                 }
                 next
             }
+            /^  host__hypervisor:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  l=length($1)
+                  print "hosthypervisor=\""substr($0, l+4)"\""
+                }
+                next
+            }
             /^  host__infrastructure:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
                   l=length($1)
                   print "hostinfrastructure=\""substr($0, l+4)"\""
+                }
+                next
+            }
+            /^  host__virt-type:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  l=length($1)
+                  print "hostvtype=\""substr($0, l+4)"\""
                 }
                 next
             }
@@ -814,8 +830,12 @@ re_define_parsed_variables()
     environement=""
 ###*** Array:                 parameters.debops
 #    debops=()
+#*** String:                parameters.host__hypervisor
+    hosthypervisor=""
 #*** String:                parameters.host__infrastructure
     hostinfrastructure=""
+#*** String:                parameters.host__virt-type
+    hostvtype=""
 #*** String:                parameters.host__locations
     hostlocation=""
 #*** String:                parameters.host__type
@@ -1017,9 +1037,13 @@ list_node_type()
 {
     list_node $n
     printf "\e[0;33m This host is a \e[1;33m${hosttypeh} (${hosttype})\e[0;33m.\n"
-    [ -n "$hostinfrastructure" ] &&
-        printf " It is running on \e[1;33m${hostinfrastructure}\e[0;33m.\n" ||
-        true
+    if [ -n "$hostinfrastructure" ] ; then
+        if [ -n "$hostvtype" ] && [ "$n" == "$hosthypervisor" ] ; then
+            printf " It runs \e[1;33m${hostvtype}\e[0;33m.\n"
+        else
+            printf " It is running on \e[1;33m${hostinfrastructure}\e[0;33m.\n"
+        fi
+    fi
     [ -n "$hostlocation" ] &&
         printf " The ${hosttypeh} is located at "
         printf "\e[1;33m$hostlocation\e[0;33m.\n" ||
