@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-46-g4601afc
+#** Version: v1.2-47-g68d5a42
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1513,9 +1513,8 @@ case $1 in
 #*  reinit                          update reclass environment without
 #*                                  pulling repos
     init|reinit)
-        shift
         $_mkdir -p "$workdir"
-        if [ $1 = init ] ; then
+        if [ "$1" == init ] ; then
             for g in ${!toclone[@]} ; do
                 git_dest=""
                 if [ -n "${inventorydirs[$g]}" ] ; then
@@ -1538,6 +1537,7 @@ case $1 in
                 fi
             done
         fi
+        shift
         echo "Re-create the inventory. Note: there will be warnings for duplicates"
         echo "etc. "
         $_mkdir -p $inventorydir/{nodes,classes}
