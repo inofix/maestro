@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-46-g4601afc
+#** Version: v1.2-48-g3f6c12f
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -150,6 +150,7 @@ sys_tools=(
             ["_ssh"]="/usr/bin/ssh"
             ["_tr"]="/usr/bin/tr"
             ["_wc"]="/usr/bin/wc"
+            ["_xargs"]="/usr/bin/xargs"
 )
 # this tools get disabled in dry-run and sudo-ed for needsroot
 danger_tools=(
@@ -1513,9 +1514,8 @@ case $1 in
 #*  reinit                          update reclass environment without
 #*                                  pulling repos
     init|reinit)
-        shift
         $_mkdir -p "$workdir"
-        if [ $1 = init ] ; then
+        if [ "$1" == init ] ; then
             for g in ${!toclone[@]} ; do
                 git_dest=""
                 if [ -n "${inventorydirs[$g]}" ] ; then
@@ -1538,15 +1538,26 @@ case $1 in
                 fi
             done
         fi
-        echo "Re-create the inventory. Note: there will be warnings for duplicates"
-        echo "etc. "
+        shift
+        echo "Re-create the inventory. Note: there will be warnings for "
+        echo "duplicates, etc. "
         $_mkdir -p $inventorydir/{nodes,classes}
-        $_rm -f $inventorydir/{nodes,classes}/*
+        $_rm -rf $inventorydir/{nodes,classes}/*
         for d in ${inventorydirs[@]} ; do
-            $_find "$d/nodes/" -mindepth 1 -maxdepth 1 -type d -exec $_ln -s \{} $inventorydir/nodes/ \;
-            $_find "$d/nodes/" -mindepth 1 -maxdepth 1 -name "*.yml" -exec $_ln -s \{} $inventorydir/nodes/ \;
-            $_find "$d/classes/" -mindepth 1 -maxdepth 1 -type d -exec $_ln -s \{} $inventorydir/classes/ \;
-            $_find "$d/classes/" -mindepth 1 -maxdepth 1 -name "*.yml" -exec $_ln -s \{} $inventorydir/classes/ \;
+            $_find "$d/nodes/" -type d |
+                $_sed 's;'$d'/nodes/;'$inventorydir'/nodes/;' |
+                $_xargs $_mkdir -p
+            $_find "$d/classes/" -type d |
+                $_sed 's;'$d'/classes/;'$inventorydir'/classes/;' |
+                $_xargs $_mkdir -p
+            $_find "$d/nodes/" -name "*.yml" |
+                $_sed \
+                  's;\('$d'/nodes/\)\(.*\);\1\2 '$inventorydir'/nodes/\2;' |
+                $_xargs -r -n 2 $_ln -s || true
+            $_find "$d/classes/" -name "*.yml" |
+                $_sed \
+                  's;\('$d'/classes/\)\(.*\);\1\2 '$inventorydir'/classes/\2;' |
+                $_xargs -r -n 2 $_ln -s || true
         done
         echo "Re-connect ansible to our reclass inventory"
         [ ! -f "$inventorydir/hosts" ] || $_rm "$inventorydir/hosts"
