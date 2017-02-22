@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-48-g3f6c12f
+#** Version: v1.2-49-g0da1fb7
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1574,9 +1574,10 @@ hostfile    = $inventorydir/hosts
 timeout     = $ansible_timeout
 ansible_managed = "$ansible_managed"
 roles_path  = $maestrodir/$ansible_galaxy_roles
+#allow_world_readable_tmpfiles = true
 
 [ssh_connection]
-scp_if_ssh = $Ansible_scp_if_ssh
+#scp_if_ssh = $Ansible_scp_if_ssh
 EOF
         else
             echo "write config file $inventorydir/reclass-config.yml"
