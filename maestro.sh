@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-55-g5a478c2
+#** Version: v1.2-56-g9e29174
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1238,7 +1238,7 @@ unfold_all()
                     elif [ 1 -eq $rv ] ; then
                         printf "      found '$f' in last/host storage dir "
                         printf " '${storagedirs[$i]}/$t', merging!\n"
-                        $_cp "$f" "${storagedirs[$i]}/$t"
+                        $_rsync $rsync_options "$f" "${storagedirs[$i]}/$t"
                         continue
                     fi
                 else
@@ -1267,7 +1267,7 @@ unfold_all()
                             fi
                             case $answer in
                                 y*|Y*)
-                                    $_cp "$f" "${storagedirs[$j]}/$t"
+                                    $_rsync $rsync_options "$f" "${storagedirs[$j]}/$t"
                                     unmerge_done=0
                                     break
                                 ;;
@@ -1297,7 +1297,7 @@ unfold_all()
                         else
                             let answer--
                             $_mkdir -p "${storagedirs[$answer]}/${t%/*}"
-                            $_cp "$f" "${storagedirs[$answer]}/$t"
+                            $_rsync $rsync_options "$f" "${storagedirs[$answer]}/$t"
                         fi
                     fi
                 fi
