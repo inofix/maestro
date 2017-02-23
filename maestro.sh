@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-56-g9e29174
+#** Version: v1.2-57-g2dc0d41
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -128,7 +128,6 @@ sys_tools=(
             ["_awk"]="/usr/bin/gawk"
             ["_basename"]="/usr/bin/basename"
             ["_cat"]="/bin/cat"
-            ["_cp"]="/bin/cp"
             ["_diff"]="/usr/bin/diff"
             ["_dirname"]="/usr/bin/dirname"
             ["_find"]="/usr/bin/find"
@@ -158,7 +157,6 @@ danger_tools=(
             "_ansible"
             "_ansible_playbook"
             "_ansible_galaxy"
-            "_cp"
             "_cat"
             "_dd"
             "_ln"
