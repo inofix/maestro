@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-53-g465d953
+#** Version: v1.2-54-gb5fbc66
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1321,7 +1321,7 @@ nodes=()
 
 #* actions:
 case $1 in
-    ansible-fetch*|ansible-put*|ansible-play*|play|playloop|ploop|put|fetch)
+    ansible-play*|play|playloop|ploop)
         get_nodes
         [ -n "$_ansible" ] || error "Missing system tool: ansible."
         [ -n "$_ansible_playbook" ] ||
