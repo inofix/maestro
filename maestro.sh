@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-52-g51611f5
+#** Version: v1.2-53-g465d953
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1349,30 +1349,6 @@ case $1 in
             export ANSIBLE_CONFIG
         fi
     ;;&
-#*  ansible-fetch src dest [flat]   ansible oversimplified fetch module
-#*                                  wrapper (prefer ansible-play instead)
-#*                                  'src' is /path/file on remote host
-#*                                  'dest' is /path/ on local side
-#*                                  without 'flat' hostname is namespace
-#*                                  else use 'flat' instead of hostname
-#*                                  for destination path which looks like
-#*                                  localhost:/localpath/namespace/path/file
-    ansible-fetch|fetch)
-        src=$2
-        dest=$3
-        flat=""
-        if [ -n "$4" ] ; then
-
-            dest=$dest/$4/$src
-            flat="flat=true"
-        fi
-        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e '$ansibleextravars'} $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
-        if [ 0 -ne "$force" ] ; then
-            echo "Press <Enter> to continue <Ctrl-C> to quit"
-            read
-        fi
-        $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
-    ;;
 #*  ansible-plays-list (apls)       list all available plays (see 'playbookdir')
 #*                                  in your config (with explanation).
     ansible-plays-list|apls|pls)
@@ -1430,25 +1406,6 @@ case $1 in
             fi
             $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e "workdir='$workdir' $itemname='{{ $iparam }}' $ansibleextravars" $ansibleoptions $p
         done
-    ;;
-#*  ansible-put src dest            ansible oversimplified copy module wrapper
-#*                                  (prefer ansible-play instead)
-#*                                  'src' is /path/file on local host
-#*                                  'dest' is /path/.. on remote host
-    ansible-put|put)
-
-        src=$2
-        dest=$3
-
-        owner="" ; [ -z "$4" ] || owner="owner=$4"
-        mode="" ; [ -z "$5" ] || mode="mode=$5"
-
-        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e '$ansibleextravars'} $ansibleoptions -m copy -a 'src=$src dest=$dest' $owner $mode"
-        if [ 0 -ne "$force" ] ; then
-            echo "Press <Enter> to continue <Ctrl-C> to quit"
-            read
-        fi
-        $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions -m copy -a "src=$src dest=$dest" $owner $mode
     ;;
     *)
         if [ -n "$classfilter" ] ; then
