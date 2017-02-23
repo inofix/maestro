@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-58-g130fdea
+#** Version: v1.2-59-g5c19620
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1371,7 +1371,7 @@ case $1 in
     ;;
 #*  ansible-plays-short-list (apsl) list all available plays (see 'playbookdir')
 #*                                  in your config (short).
-    ansible-plays-list|apsl|psl)
+    ansible-plays-short-list|apsl|psl)
     foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
     for p in ${foundplays[@]} ; do
         o=${p%.yml}
