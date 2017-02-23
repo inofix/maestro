@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-54-gb5fbc66
+#** Version: v1.2-55-g5a478c2
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -58,7 +58,8 @@ dryrun=1
 # whether we must run as root
 needsroot=1
 
-# rsync mode
+# rsync mode - read the code here first (rsync is used both for single files
+# and recursively!)
 rsync_options="-a -m --exclude=.keep"
 
 merge_only_this_subdir=""
@@ -284,15 +285,12 @@ while true ; do
         -f|--force)
             force=0
         ;;
-#*  --dry-run|-n                    do not change anything
+#*  --dry-run|-n                    do not change anything (also see un-/merge
+#*                                  and ansible actions for their dry-run/check)
         -n|--dry-run)
             dryrun=0
         ;;
-#*  --dry-run-rsync                 do all but on rsync just pretend
-        --dry-run-rsync|--rsync-dry-run)
-            rsync_options="$rsync_options -n"
-        ;;
-#*  --dry-run-ansible               do all but on ansible just pretend
+##*  --dry-run-ansible               do all but on ansible just pretend
         --dry-run-ansible|--ansible-dry-run)
             ansibleoptions="$ansibleoptions -C"
         ;;
@@ -1131,7 +1129,7 @@ re_merge_custom()
         fi
         if [ -e "$1/${remergecustomsrc[$m]}" ] ; then
             $_mkdir -p ${remergecustomdest[$m]%/*}
-            $_cp $1/${remergecustomsrc[$m]} ${remergecustomdest[$m]}
+            $_rsync $rsync_options $1/${remergecustomsrc[$m]} ${remergecustomdest[$m]}
         elif [ $verbose -gt 0 ] ; then
             printf "\e[0:31m  Skipping $1/${remergecustomsrc[$m]} as it does not exist..\n\e[0;39m"
         fi
@@ -1614,9 +1612,11 @@ EOF
         process_nodes list_node_type ${nodes[@]}
     ;;
 ####TODO rename to fold/unfold ??
-#*  merge (mg)                      just merge all storage directories - flat
-#*                                  to $workdir
+#*  merge (mg) [rsync-option]..     just merge all storage directories - flat
+#*                                  to $workdir with rsync
     merge|merge-a*|mg)
+        shift
+        rsync_options="$rsync_options $@"
         get_nodes
         if [ $verbose -gt 0 ] ; then
             printf "\e[1;39mSynchronizing storage dirs \e[0m(rsync options: "
@@ -1624,10 +1624,13 @@ EOF
         fi
         process_nodes merge_all ${nodes[@]}
     ;;
-#*  merge-custom (mc)               merge after custom rules defined in reclass
+#*  merge-custom (mc) [rsync-option]..
+#*                                  merge after custom rules defined in reclass
 #*                                  in $workdir, then move to the destination
 #*                                  as specified
     merge-cu*|mc)
+        shift
+        rsync_options="$rsync_options $@"
         get_nodes
         merge_mode="custom"
         process_nodes merge_all ${nodes[@]}
@@ -1745,9 +1748,11 @@ EOF
         process_nodes connect_node ${nodes[@]}
     ;;
 ####TODO rename to fold/unfold ??
-#*  unmerge (umg)                   copy the content of $workdir back to the
+#*  unmerge (umg) [rsync-option]..  copy the content of $workdir back to the
 #*                                  storage directories - guess or ask..
     unmerge|umg)
+        shift
+        rsync_options="$rsync_options $@"
         get_nodes
         if [ $verbose -gt 0 ] ; then
             printf "\e[1;39mSynchronizing back to storage dirs\e[0m\n"
