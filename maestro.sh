@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-59-g5c19620
+#** Version: v1.2-60-ga5e11f1
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -252,26 +252,6 @@ while true ; do
 #*                 action command
         -B|--ansible-become-su*)
             ansible_root="--become --become-method su --become-user root -K"
-        ;;
-#*  --ansible-ask-password|-k       ask for the connection pw (see ansible -k)
-#*    *deprecated* options can be passed to ansible after the play/playloop
-#*                 action command
-        -k|--ask-pass)
-            pass_ask_pass="-k"
-        ;;
-#*  --ansible-extra-vars|-a 'vars'  variables to pass to ansible
-#*    *deprecated* options can be passed to ansible after the play/playloop
-#*                 action command
-        -a|--ansible-extra-vars)
-            shift
-            ansibleextravars="$1"
-        ;;
-#*                                  ansible_playbook resp.
-#*    *deprecated* options can be passed to ansible after the play/playloop
-#*                 action command
-        -A|--ansible-options)
-            shift
-            ansibleoptions="$1"
         ;;
 #*  --config|-c conffile            alternative config file
         -c|--config)
