@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-57-g2dc0d41
+#** Version: v1.2-58-g130fdea
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -241,25 +241,34 @@ inventorydir="$maestrodir/.inventory"
 while true ; do
     case "$1" in
 #*  --ansible-become-root|-b        Ansible: Use --become-user root -K
+#*    *deprecated* options can be passed to ansible after the play/playloop
+#*                 action command
         -b|--ansible-become-root)
             ansible_root="--become --become-user root -K"
         ;;
 #*  --ansible-become-su-root|-B     Ansible: Use --become-method su \
 #*                                              --become-user root -K
+#*    *deprecated* options can be passed to ansible after the play/playloop
+#*                 action command
         -B|--ansible-become-su*)
             ansible_root="--become --become-method su --become-user root -K"
         ;;
 #*  --ansible-ask-password|-k       ask for the connection pw (see ansible -k)
+#*    *deprecated* options can be passed to ansible after the play/playloop
+#*                 action command
         -k|--ask-pass)
             pass_ask_pass="-k"
         ;;
 #*  --ansible-extra-vars|-a 'vars'  variables to pass to ansible
+#*    *deprecated* options can be passed to ansible after the play/playloop
+#*                 action command
         -a|--ansible-extra-vars)
             shift
             ansibleextravars="$1"
         ;;
-#*  --ansible-options|-A 'options'  options to pass to ansible or
 #*                                  ansible_playbook resp.
+#*    *deprecated* options can be passed to ansible after the play/playloop
+#*                 action command
         -A|--ansible-options)
             shift
             ansibleoptions="$1"
@@ -1318,6 +1327,10 @@ nodes=()
 #* actions:
 case $1 in
     ansible-play*|play|playloop|ploop)
+        shift
+        ansibleplaybook="$1"
+        shift
+        ansibleoptions="$ansibleoptions $@"
         get_nodes
         [ -n "$_ansible" ] || error "Missing system tool: ansible."
         [ -n "$_ansible_playbook" ] ||
@@ -1370,9 +1383,9 @@ case $1 in
 #*                                  file as '$playbookdir'.
 #*                                  'play' name of the play
     ansible-play|ansible-playbook|play)
-        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${2}.yml)"
+        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${ansibleplaybook}.yml)"
         [ -n "$p" ] ||
-            error "There is no play called ${2}.yml in ${playbookdirs[@]}"
+            error "There is no play called ${ansibleplaybook}.yml in ${playbookdirs[@]}"
         echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
@@ -1390,9 +1403,9 @@ case $1 in
     ansible-play-loop|playloop|ploop)
         itemname=$3
         itemparams=$4
-        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${2}.yml)"
+        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${ansibleplaybook}.yml)"
         [ -n "$p" ] ||
-            error "There is no play called ${2}.yml in ${playbookdirs[@]}"
+            error "There is no play called ${ansibleplaybook}.yml in ${playbookdirs[@]}"
         for iparam in ${itemparams//:/ } ; do
 
             echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e 'workdir="$workdir" $itemname="{{ $iparam }}" $ansibleextravars' $ansibleoptions $p"
