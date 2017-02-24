@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-62-g9690a1e
+#** Version: v1.2-63-gdb0f0de
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -311,11 +311,6 @@ while true ; do
 #*  --quiet                         equal to '--verbose 0'
         -q|--quiet)
             verbose="0"
-        ;;
-#*  --subdir-only|-s subdir         concentrate on this subdir only for merges
-        -s|--subdir-only|--subdir-only-merge)
-            shift
-            merge_only_this_subdir=$1
         ;;
 #TODO actually fix all functions to respect the verbose parameter..
 #*  --verbose|-v [level]            print out what is done ([0]:quiet [1..])
@@ -1132,8 +1127,8 @@ merge_all()
     if [ ! -d "$workdir" ] ; then
         die "Target directory '$workdir' does not exist!"
     fi
-    src_subdir=""
-    trgt_subdir=""
+    src=""
+    trgt=""
     if [ -n "$merge_only_this_subdir" ] ; then
         if [ $verbose -gt 1 ] ; then
             printf "    - focus on '$merge_only_this_subdir' only\n"
@@ -1194,8 +1189,8 @@ unfold_all()
     if [ ! -d "$workdir" ] ; then
         die "Source directory '$workdir' does not exist!"
     fi
-    src_subdir=""
-    trgt_subdir=""
+    src=""
+    trgt=""
     if [ -n "$merge_only_this_subdir" ] ; then
         if [ $verbose -gt 1 ] ; then
             printf "    - focus on '$merge_only_this_subdir' only\n"
@@ -1213,7 +1208,7 @@ unfold_all()
                 if [ $verbose -gt 1 ] ; then
                     printf "    processing $f\n"
                 fi
-                t=${f/$workdir\/$n\/$trgt/}
+                t="${f/$workdir\/$n\/$trgt/}"
                 let i=${#storagedirs[@]}-1
                 if [ -f "${storagedirs[$i]}/$t" ] ; then
                     rv=0
@@ -1616,10 +1611,16 @@ EOF
         process_nodes list_node_type ${nodes[@]}
     ;;
 ####TODO rename to fold/unfold ??
-#*  merge (mg) [rsync-option]..     just merge all storage directories - flat
-#*                                  to $workdir with rsync
+#*  merge (mg) [subdir] [rsync-option]..
+#*                                  just merge all storage directories
+#*                                  (only under subdir if specified)
+#*                                  flat to $workdir with rsync
     merge|merge-a*|mg)
         shift
+        if [ "$1" != "" ] && [ "${1:0:1}" != "-" ] ; then
+            merge_only_this_subdir="$1"
+            shift
+        fi
         rsync_options="$rsync_options $@"
         get_nodes
         if [ $verbose -gt 0 ] ; then
@@ -1628,12 +1629,16 @@ EOF
         fi
         process_nodes merge_all ${nodes[@]}
     ;;
-#*  merge-custom (mc) [rsync-option]..
+#*  merge-custom (mc) [subdir] [rsync-option]..
 #*                                  merge after custom rules defined in reclass
-#*                                  in $workdir, then move to the destination
-#*                                  as specified
+#*                                  in $workdir (just subdir if specified),
+#*                                  then move to its target destination
     merge-cu*|mc)
         shift
+        if [ "$1" != "" ] && [ "${1:0:1}" != "-" ] ; then
+            merge_only_this_subdir="$1"
+            shift
+        fi
         rsync_options="$rsync_options $@"
         get_nodes
         merge_mode="custom"
@@ -1756,6 +1761,10 @@ EOF
 #*                                  storage directories - guess or ask..
     unmerge|umg)
         shift
+        if [ "$1" != "" ] && [ "${1:0:1}" != "-" ] ; then
+            merge_only_this_subdir="$1"
+            shift
+        fi
         rsync_options="$rsync_options $@"
         get_nodes
         if [ $verbose -gt 0 ] ; then
