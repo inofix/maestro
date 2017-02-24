@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-63-gdb0f0de
+#** Version: v1.3
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1208,7 +1208,7 @@ unfold_all()
                 if [ $verbose -gt 1 ] ; then
                     printf "    processing $f\n"
                 fi
-                t="${f/$workdir\/$n\/$trgt/}"
+                t="$merge_only_this_subdir${merge_only_this_subdir:+/}${f/$workdir\/$n\/$trgt/}"
                 let i=${#storagedirs[@]}-1
                 if [ -f "${storagedirs[$i]}/$t" ] ; then
                     rv=0
