@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-2-gca1799c
+#** Version: v1.3-3-g2a91152
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -240,19 +240,6 @@ inventorydir="$maestrodir/.inventory"
 #* options:
 while true ; do
     case "$1" in
-#*  --ansible-become-root|-b        Ansible: Use --become-user root -K
-#*    *deprecated* options can be passed to ansible after the play/playloop
-#*                 action command
-        -b|--ansible-become-root)
-            ansible_root="--become --become-user root -K"
-        ;;
-#*  --ansible-become-su-root|-B     Ansible: Use --become-method su \
-#*                                              --become-user root -K
-#*    *deprecated* options can be passed to ansible after the play/playloop
-#*                 action command
-        -B|--ansible-become-su*)
-            ansible_root="--become --become-method su --become-user root -K"
-        ;;
 #*  --config|-c conffile            alternative config file
         -c|--config)
             shift
@@ -708,9 +695,9 @@ reclass_parser='BEGIN {
 # Not all projects use the same access policy - try to give some hints
 ansible_connection_test()
 {
-    if [ "${ansible_meta['prompt_password']}" == "true" ] ; then
+    if [ "${ansible_meta['ask_pass']}" == "true" ] ; then
         printf "\e[1;33mWarning: "
-        printf "\e[1;39m$n\e[0m has ansible:prompt_password set to 'true'.\n"
+        printf "\e[1;39m$n\e[0m has ansible:ask_pass set to 'true'.\n"
         printf "         You probably want to use the '-k' flag.\n"
     fi
     if [ -n "${ansible_meta['ssh_common_args']}" ] ; then
