@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-60-ga5e11f1
+#** Version: v1.2-61-g41549d7
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1310,7 +1310,6 @@ case $1 in
         shift
         ansibleplaybook="$1"
         shift
-        ansibleoptions="$ansibleoptions $@"
         get_nodes
         [ -n "$_ansible" ] || error "Missing system tool: ansible."
         [ -n "$_ansible_playbook" ] ||
@@ -1358,11 +1357,17 @@ case $1 in
         printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;39m\n"
     done
     ;;
-#*  ansible-play (play) play        wrapper to ansible which also includes
+#*  ansible-play (play) play '[ansible-extra-vars] ..' [ansible-option]..
+#*                                  wrapper to ansible which also includes
 #*                                  custom plays stored in the config
 #*                                  file as '$playbookdir'.
 #*                                  'play' name of the play
     ansible-play|ansible-playbook|play)
+        if [ "${1:0:1}" != "-" ] ; then
+            ansibleextravars="$ansibleextravars $1"
+            shift
+        fi
+        ansibleoptions="$ansibleoptions $@"
         p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${ansibleplaybook}.yml)"
         [ -n "$p" ] ||
             error "There is no play called ${ansibleplaybook}.yml in ${playbookdirs[@]}"
@@ -1371,9 +1376,10 @@ case $1 in
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $p
+        $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $@ $p
     ;;
-#*  ansible-play-loop (ploop) play itemname itemsparameter:..
+#*  ansible-play-loop (ploop) play itemkey=itemval0:.. '[ansible-extra-vars] ..'
+#*                                 [ansible-option]..
 #*                                  wrapper to ansible which also includes
 #*                                  custom plays stored in the config
 #*                                  file as '$playbookdir'. Unlike 'play'
@@ -1381,8 +1387,14 @@ case $1 in
 #*                                  every 'itemsparameter' as 'itemname' passed
 #*                                  on to 'play', name of the play
     ansible-play-loop|playloop|ploop)
-        itemname=$3
-        itemparams=$4
+        itemname="${1%=*}"
+        itemparams="${1##*=}"
+        shift
+        if [ "$1" != "" ] && [ "${1:0:1}" != "-" ] ; then
+            ansibleextravars="$ansibleextravars $1"
+            shift
+        fi
+        ansibleoptions="$ansibleoptions $@"
         p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${ansibleplaybook}.yml)"
         [ -n "$p" ] ||
             error "There is no play called ${ansibleplaybook}.yml in ${playbookdirs[@]}"
