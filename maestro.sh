@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-61-g41549d7
+#** Version: v1.2-62-g9690a1e
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -272,8 +272,9 @@ while true ; do
         -f|--force)
             force=0
         ;;
-#*  --dry-run|-n                    do not change anything (also see un-/merge
-#*                                  and ansible actions for their dry-run/check)
+#*  --dry-run|-n                    do not change anything (see the un-/merge
+#*                                  aka rsync, and the ansible actions for their
+#*                                  resp. dry-run/check mode)
         -n|--dry-run)
             dryrun=0
         ;;
