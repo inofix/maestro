@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-1-g02ce124
+#** Version: v1.3-2-gca1799c
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1367,7 +1367,7 @@ case $1 in
 #*                                  file as '$playbookdir'.
 #*                                  'play' name of the play
     ansible-play|ansible-playbook|play)
-        if [ "${1:0:1}" != "-" ] ; then
+        if [ "$1" != "" ] && [ "${1:0:1}" != "-" ] ; then
             ansibleextravars="$ansibleextravars $1"
             shift
         fi
