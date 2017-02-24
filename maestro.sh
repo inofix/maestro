@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3
+#** Version: v1.3-1-g02ce124
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -908,6 +908,14 @@ get_nodes()
                    /^nodes:/ {node=0};\
                    /^  \w/ {if (node == 0) {print now $0}}' |\
             $_tr -d ":" | $_sort -r ) )
+    if [ -n "$classfilter" ] ; then
+        process_nodes process_classes ${nodes[@]}
+        nodes=()
+        for a in ${classes_dict[$classfilter]//:/ } ; do
+            nodes=( ${nodes[@]} $a )
+        done
+        classes_dict=()
+    fi
 }
 
 # List all applications for all hosts
@@ -1404,15 +1412,6 @@ case $1 in
             $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e "workdir='$workdir' $itemname='{{ $iparam }}' $ansibleextravars" $ansibleoptions $p
         done
     ;;
-    *)
-        if [ -n "$classfilter" ] ; then
-            process_nodes process_classes ${nodes[@]}
-            nodes=()
-            for a in ${classes_dict[$classfilter]//:/ } ; do
-                nodes=( ${nodes[@]} $a )
-            done
-        fi
-    ;;&
 #*  applications-list [app]         list hosts sorted by applications
     als|app*)
         get_nodes
