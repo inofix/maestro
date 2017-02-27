@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-48-g3f6c12f
+#** Version: v1.3-6-gc0060e8
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -58,7 +58,8 @@ dryrun=1
 # whether we must run as root
 needsroot=1
 
-# rsync mode
+# rsync mode - read the code here first (rsync is used both for single files
+# and recursively!)
 rsync_options="-a -m --exclude=.keep"
 
 merge_only_this_subdir=""
@@ -127,7 +128,6 @@ sys_tools=(
             ["_awk"]="/usr/bin/gawk"
             ["_basename"]="/usr/bin/basename"
             ["_cat"]="/bin/cat"
-            ["_cp"]="/bin/cp"
             ["_diff"]="/usr/bin/diff"
             ["_dirname"]="/usr/bin/dirname"
             ["_find"]="/usr/bin/find"
@@ -157,7 +157,6 @@ danger_tools=(
             "_ansible"
             "_ansible_playbook"
             "_ansible_galaxy"
-            "_cp"
             "_cat"
             "_dd"
             "_ln"
@@ -241,30 +240,6 @@ inventorydir="$maestrodir/.inventory"
 #* options:
 while true ; do
     case "$1" in
-#*  --ansible-become-root|-b        Ansible: Use --become-user root -K
-        -b|--ansible-become-root)
-            ansible_root="--become --become-user root -K"
-        ;;
-#*  --ansible-become-su-root|-B     Ansible: Use --become-method su \
-#*                                              --become-user root -K
-        -B|--ansible-become-su*)
-            ansible_root="--become --become-method su --become-user root -K"
-        ;;
-#*  --ansible-ask-password|-k       ask for the connection pw (see ansible -k)
-        -k|--ask-pass)
-            pass_ask_pass="-k"
-        ;;
-#*  --ansible-extra-vars|-a 'vars'  variables to pass to ansible
-        -a|--ansible-extra-vars)
-            shift
-            ansibleextravars="$1"
-        ;;
-#*  --ansible-options|-A 'options'  options to pass to ansible or
-#*                                  ansible_playbook resp.
-        -A|--ansible-options)
-            shift
-            ansibleoptions="$1"
-        ;;
 #*  --config|-c conffile            alternative config file
         -c|--config)
             shift
@@ -284,15 +259,13 @@ while true ; do
         -f|--force)
             force=0
         ;;
-#*  --dry-run|-n                    do not change anything
+#*  --dry-run|-n                    do not change anything (see the un-/merge
+#*                                  aka rsync, and the ansible actions for their
+#*                                  resp. dry-run/check mode)
         -n|--dry-run)
             dryrun=0
         ;;
-#*  --dry-run-rsync                 do all but on rsync just pretend
-        --dry-run-rsync|--rsync-dry-run)
-            rsync_options="$rsync_options -n"
-        ;;
-#*  --dry-run-ansible               do all but on ansible just pretend
+##*  --dry-run-ansible               do all but on ansible just pretend
         --dry-run-ansible|--ansible-dry-run)
             ansibleoptions="$ansibleoptions -C"
         ;;
@@ -325,11 +298,6 @@ while true ; do
 #*  --quiet                         equal to '--verbose 0'
         -q|--quiet)
             verbose="0"
-        ;;
-#*  --subdir-only|-s subdir         concentrate on this subdir only for merges
-        -s|--subdir-only|--subdir-only-merge)
-            shift
-            merge_only_this_subdir=$1
         ;;
 #TODO actually fix all functions to respect the verbose parameter..
 #*  --verbose|-v [level]            print out what is done ([0]:quiet [1..])
@@ -724,25 +692,50 @@ reclass_parser='BEGIN {
             END {
             }'
 
+print_warning()
+{
+    if [ $verbose -ge 1 ] ; then
+        printf "\e[1;33mWarning: "
+        printf "\e[1;39m$n \e[0m$1\n"
+    fi
+}
+
 # Not all projects use the same access policy - try to give some hints
 ansible_connection_test()
 {
-    if [ "${ansible_meta['prompt_password']}" == "true" ] ; then
-        printf "\e[1;33mWarning: "
-        printf "\e[1;39m$n\e[0m has ansible:prompt_password set to 'true'.\n"
-        printf "         You probably want to use the '-k' flag.\n"
-    fi
-    if [ -n "${ansible_meta['ssh_common_args']}" ] ; then
-        printf "\e[1;33mWarning: "
-        printf "\e[1;39m$n\e[0m has ansible:ssh_common_args set to '${ansible_meta['ssh_common_args']}'.\n"
-        printf "         Please check your ssh configs for that host if you encounter problems.\n"
-    fi
-    for l in connect_timeout scp_if_ssh ; do
-        if [ -n "${ansible_meta[$l]}" ] ; then
-            printf "\e[1;33mWarning: "
-            printf "\e[1;39m$n\e[0m has ansible:$l set to '${ansible_meta[$l]}'.\n"
-            printf "         Please control your (.)ansible.cfg if you encounter problems.\n"
-        fi
+    for o in ${!ansible_meta[@]} ; do
+        case $o in
+            ask_pass)
+                if [ ${ansible_meta[$o]} == "true" ] ; then
+                    print_warning "has ansible:ask_pass set to 'true'. You probably want to use the '-k' flag."
+                fi
+            ;;
+            ask_become_pass)
+                if [ ${ansible_meta[$o]} == "true" ] ; then
+                    print_warning "has ansible:ask_become_pass set to 'true'. You probably want to use something like '--become --become-user root -K' as flags."
+                fi
+            ;;
+            connect_timeout)
+                if [ ${ansible_meta[$o]} -gt $ansible_timeout ] ; then
+                    print_warning ""
+                fi
+            ;;
+            ssh_common_args)
+                print_warning "has ansible:ssh_common_args set to '${ansible_meta['ssh_common_args']}'. Please check your ssh configs for that host if you encounter problems."
+            ;;
+            scp_if_ssh)
+                if [ ${ansible_meta[$o]} == "true" ] ; then
+                    print_warning "has ansible:$o set to '${ansible_meta[$o]}'. Please control your (.)ansible.cfg if you encounter problems."
+                fi
+            ;;
+            user)
+                if [ -n "${ansible_meta[$o]}" ] ; then
+                    print_warning "has set a certain user to be required for connecting. You might want to set '-u ${ansible_meta[$o]}'. Usually this is already set in the backend via the 'ansible_user' parameter"
+                fi
+            ;;
+            *)
+            ;;
+        esac
     done
 }
 
@@ -927,6 +920,14 @@ get_nodes()
                    /^nodes:/ {node=0};\
                    /^  \w/ {if (node == 0) {print now $0}}' |\
             $_tr -d ":" | $_sort -r ) )
+    if [ -n "$classfilter" ] ; then
+        process_nodes process_classes ${nodes[@]}
+        nodes=()
+        for a in ${classes_dict[$classfilter]//:/ } ; do
+            nodes=( ${nodes[@]} $a )
+        done
+        classes_dict=()
+    fi
 }
 
 # List all applications for all hosts
@@ -1131,7 +1132,7 @@ re_merge_custom()
         fi
         if [ -e "$1/${remergecustomsrc[$m]}" ] ; then
             $_mkdir -p ${remergecustomdest[$m]%/*}
-            $_cp $1/${remergecustomsrc[$m]} ${remergecustomdest[$m]}
+            $_rsync $rsync_options $1/${remergecustomsrc[$m]} ${remergecustomdest[$m]}
         elif [ $verbose -gt 0 ] ; then
             printf "\e[0:31m  Skipping $1/${remergecustomsrc[$m]} as it does not exist..\n\e[0;39m"
         fi
@@ -1146,8 +1147,8 @@ merge_all()
     if [ ! -d "$workdir" ] ; then
         die "Target directory '$workdir' does not exist!"
     fi
-    src_subdir=""
-    trgt_subdir=""
+    src=""
+    trgt=""
     if [ -n "$merge_only_this_subdir" ] ; then
         if [ $verbose -gt 1 ] ; then
             printf "    - focus on '$merge_only_this_subdir' only\n"
@@ -1208,8 +1209,8 @@ unfold_all()
     if [ ! -d "$workdir" ] ; then
         die "Source directory '$workdir' does not exist!"
     fi
-    src_subdir=""
-    trgt_subdir=""
+    src=""
+    trgt=""
     if [ -n "$merge_only_this_subdir" ] ; then
         if [ $verbose -gt 1 ] ; then
             printf "    - focus on '$merge_only_this_subdir' only\n"
@@ -1227,7 +1228,7 @@ unfold_all()
                 if [ $verbose -gt 1 ] ; then
                     printf "    processing $f\n"
                 fi
-                t=${f/$workdir\/$n\/$trgt/}
+                t="$merge_only_this_subdir${merge_only_this_subdir:+/}${f/$workdir\/$n\/$trgt/}"
                 let i=${#storagedirs[@]}-1
                 if [ -f "${storagedirs[$i]}/$t" ] ; then
                     rv=0
@@ -1240,7 +1241,7 @@ unfold_all()
                     elif [ 1 -eq $rv ] ; then
                         printf "      found '$f' in last/host storage dir "
                         printf " '${storagedirs[$i]}/$t', merging!\n"
-                        $_cp "$f" "${storagedirs[$i]}/$t"
+                        $_rsync $rsync_options "$f" "${storagedirs[$i]}/$t"
                         continue
                     fi
                 else
@@ -1269,7 +1270,7 @@ unfold_all()
                             fi
                             case $answer in
                                 y*|Y*)
-                                    $_cp "$f" "${storagedirs[$j]}/$t"
+                                    $_rsync $rsync_options "$f" "${storagedirs[$j]}/$t"
                                     unmerge_done=0
                                     break
                                 ;;
@@ -1299,7 +1300,7 @@ unfold_all()
                         else
                             let answer--
                             $_mkdir -p "${storagedirs[$answer]}/${t%/*}"
-                            $_cp "$f" "${storagedirs[$answer]}/$t"
+                            $_rsync $rsync_options "$f" "${storagedirs[$answer]}/$t"
                         fi
                     fi
                 fi
@@ -1321,7 +1322,10 @@ nodes=()
 
 #* actions:
 case $1 in
-    ansible-fetch*|ansible-put*|ansible-play*|play|playloop|ploop|put|fetch)
+    ansible-play*|play|playloop|ploop)
+        shift
+        ansibleplaybook="$1"
+        shift
         get_nodes
         [ -n "$_ansible" ] || error "Missing system tool: ansible."
         [ -n "$_ansible_playbook" ] ||
@@ -1349,30 +1353,6 @@ case $1 in
             export ANSIBLE_CONFIG
         fi
     ;;&
-#*  ansible-fetch src dest [flat]   ansible oversimplified fetch module
-#*                                  wrapper (prefer ansible-play instead)
-#*                                  'src' is /path/file on remote host
-#*                                  'dest' is /path/ on local side
-#*                                  without 'flat' hostname is namespace
-#*                                  else use 'flat' instead of hostname
-#*                                  for destination path which looks like
-#*                                  localhost:/localpath/namespace/path/file
-    ansible-fetch|fetch)
-        src=$2
-        dest=$3
-        flat=""
-        if [ -n "$4" ] ; then
-
-            dest=$dest/$4/$src
-            flat="flat=true"
-        fi
-        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e '$ansibleextravars'} $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
-        if [ 0 -ne "$force" ] ; then
-            echo "Press <Enter> to continue <Ctrl-C> to quit"
-            read
-        fi
-        $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
-    ;;
 #*  ansible-plays-list (apls)       list all available plays (see 'playbookdir')
 #*                                  in your config (with explanation).
     ansible-plays-list|apls|pls)
@@ -1386,29 +1366,36 @@ case $1 in
     ;;
 #*  ansible-plays-short-list (apsl) list all available plays (see 'playbookdir')
 #*                                  in your config (short).
-    ansible-plays-list|apsl|psl)
+    ansible-plays-short-list|apsl|psl)
     foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
     for p in ${foundplays[@]} ; do
         o=${p%.yml}
         printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;39m\n"
     done
     ;;
-#*  ansible-play (play) play        wrapper to ansible which also includes
+#*  ansible-play (play) play '[ansible-extra-vars] ..' [ansible-option]..
+#*                                  wrapper to ansible which also includes
 #*                                  custom plays stored in the config
 #*                                  file as '$playbookdir'.
 #*                                  'play' name of the play
     ansible-play|ansible-playbook|play)
-        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${2}.yml)"
+        if [ "$1" != "" ] && [ "${1:0:1}" != "-" ] ; then
+            ansibleextravars="$ansibleextravars $1"
+            shift
+        fi
+        ansibleoptions="$ansibleoptions $@"
+        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${ansibleplaybook}.yml)"
         [ -n "$p" ] ||
-            error "There is no play called ${2}.yml in ${playbookdirs[@]}"
+            error "There is no play called ${ansibleplaybook}.yml in ${playbookdirs[@]}"
         echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $p
+        $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $@ $p
     ;;
-#*  ansible-play-loop (ploop) play itemname itemsparameter:..
+#*  ansible-play-loop (ploop) play itemkey=itemval0:.. '[ansible-extra-vars] ..'
+#*                                 [ansible-option]..
 #*                                  wrapper to ansible which also includes
 #*                                  custom plays stored in the config
 #*                                  file as '$playbookdir'. Unlike 'play'
@@ -1416,11 +1403,17 @@ case $1 in
 #*                                  every 'itemsparameter' as 'itemname' passed
 #*                                  on to 'play', name of the play
     ansible-play-loop|playloop|ploop)
-        itemname=$3
-        itemparams=$4
-        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${2}.yml)"
+        itemname="${1%=*}"
+        itemparams="${1##*=}"
+        shift
+        if [ "$1" != "" ] && [ "${1:0:1}" != "-" ] ; then
+            ansibleextravars="$ansibleextravars $1"
+            shift
+        fi
+        ansibleoptions="$ansibleoptions $@"
+        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${ansibleplaybook}.yml)"
         [ -n "$p" ] ||
-            error "There is no play called ${2}.yml in ${playbookdirs[@]}"
+            error "There is no play called ${ansibleplaybook}.yml in ${playbookdirs[@]}"
         for iparam in ${itemparams//:/ } ; do
 
             echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e 'workdir="$workdir" $itemname="{{ $iparam }}" $ansibleextravars' $ansibleoptions $p"
@@ -1431,34 +1424,6 @@ case $1 in
             $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e "workdir='$workdir' $itemname='{{ $iparam }}' $ansibleextravars" $ansibleoptions $p
         done
     ;;
-#*  ansible-put src dest            ansible oversimplified copy module wrapper
-#*                                  (prefer ansible-play instead)
-#*                                  'src' is /path/file on local host
-#*                                  'dest' is /path/.. on remote host
-    ansible-put|put)
-
-        src=$2
-        dest=$3
-
-        owner="" ; [ -z "$4" ] || owner="owner=$4"
-        mode="" ; [ -z "$5" ] || mode="mode=$5"
-
-        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e '$ansibleextravars'} $ansibleoptions -m copy -a 'src=$src dest=$dest' $owner $mode"
-        if [ 0 -ne "$force" ] ; then
-            echo "Press <Enter> to continue <Ctrl-C> to quit"
-            read
-        fi
-        $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions -m copy -a "src=$src dest=$dest" $owner $mode
-    ;;
-    *)
-        if [ -n "$classfilter" ] ; then
-            process_nodes process_classes ${nodes[@]}
-            nodes=()
-            for a in ${classes_dict[$classfilter]//:/ } ; do
-                nodes=( ${nodes[@]} $a )
-            done
-        fi
-    ;;&
 #*  applications-list [app]         list hosts sorted by applications
     als|app*)
         get_nodes
@@ -1574,9 +1539,10 @@ hostfile    = $inventorydir/hosts
 timeout     = $ansible_timeout
 ansible_managed = "$ansible_managed"
 roles_path  = $maestrodir/$ansible_galaxy_roles
+#allow_world_readable_tmpfiles = true
 
 [ssh_connection]
-scp_if_ssh = $Ansible_scp_if_ssh
+#scp_if_ssh = $ansible_scp_if_ssh
 EOF
         else
             echo "write config file $inventorydir/reclass-config.yml"
@@ -1656,9 +1622,17 @@ EOF
         process_nodes list_node_type ${nodes[@]}
     ;;
 ####TODO rename to fold/unfold ??
-#*  merge (mg)                      just merge all storage directories - flat
-#*                                  to $workdir
+#*  merge (mg) [subdir] [rsync-option]..
+#*                                  just merge all storage directories
+#*                                  (only under subdir if specified)
+#*                                  flat to $workdir with rsync
     merge|merge-a*|mg)
+        shift
+        if [ "$1" != "" ] && [ "${1:0:1}" != "-" ] ; then
+            merge_only_this_subdir="$1"
+            shift
+        fi
+        rsync_options="$rsync_options $@"
         get_nodes
         if [ $verbose -gt 0 ] ; then
             printf "\e[1;39mSynchronizing storage dirs \e[0m(rsync options: "
@@ -1666,10 +1640,17 @@ EOF
         fi
         process_nodes merge_all ${nodes[@]}
     ;;
-#*  merge-custom (mc)               merge after custom rules defined in reclass
-#*                                  in $workdir, then move to the destination
-#*                                  as specified
+#*  merge-custom (mc) [subdir] [rsync-option]..
+#*                                  merge after custom rules defined in reclass
+#*                                  in $workdir (just subdir if specified),
+#*                                  then move to its target destination
     merge-cu*|mc)
+        shift
+        if [ "$1" != "" ] && [ "${1:0:1}" != "-" ] ; then
+            merge_only_this_subdir="$1"
+            shift
+        fi
+        rsync_options="$rsync_options $@"
         get_nodes
         merge_mode="custom"
         process_nodes merge_all ${nodes[@]}
@@ -1787,9 +1768,15 @@ EOF
         process_nodes connect_node ${nodes[@]}
     ;;
 ####TODO rename to fold/unfold ??
-#*  unmerge (umg)                   copy the content of $workdir back to the
+#*  unmerge (umg) [rsync-option]..  copy the content of $workdir back to the
 #*                                  storage directories - guess or ask..
     unmerge|umg)
+        shift
+        if [ "$1" != "" ] && [ "${1:0:1}" != "-" ] ; then
+            merge_only_this_subdir="$1"
+            shift
+        fi
+        rsync_options="$rsync_options $@"
         get_nodes
         if [ $verbose -gt 0 ] ; then
             printf "\e[1;39mSynchronizing back to storage dirs\e[0m\n"
