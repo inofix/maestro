@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-6-gc0060e8
+#** Version: v1.3-7-gb21a957
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -726,6 +726,11 @@ ansible_connection_test()
             scp_if_ssh)
                 if [ ${ansible_meta[$o]} == "true" ] ; then
                     print_warning "has ansible:$o set to '${ansible_meta[$o]}'. Please control your (.)ansible.cfg if you encounter problems."
+                fi
+            ;;
+            become_user)
+                if [ -n "${ansible_meta[$o]}" ] ; then
+                    print_warning "has set a certain user to be required to switch to after connecting. You might want to set '--become --become-user ${ansible_meta[$o]}'. Usually this is already set in the backend via the 'ansible_become_user' parameter"
                 fi
             ;;
             user)
