@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-4-gde4bbe6
+#** Version: v1.3-5-gafd9db6
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -725,7 +725,12 @@ ansible_connection_test()
             ;;
             scp_if_ssh)
                 if [ ${ansible_meta[$o]} == "true" ] ; then
-                    print_warning "has ansible:$o set to '${ansible_meta[$o]}'. Please control your (.)ansible.cfg if you encounter problems.\n"
+                    print_warning "has ansible:$o set to '${ansible_meta[$o]}'. Please control your (.)ansible.cfg if you encounter problems."
+                fi
+            ;;
+            user)
+                if [ -n "${ansible_meta[$o]}" ] ; then
+                    print_warning "has set a certain user to be required for connecting. You might want to set '-u ${ansible_meta[$o]}'."
                 fi
             ;;
             *)
