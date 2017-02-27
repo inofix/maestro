@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-3-g2a91152
+#** Version: v1.3-4-gde4bbe6
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -692,25 +692,45 @@ reclass_parser='BEGIN {
             END {
             }'
 
+print_warning()
+{
+    if [ $verbose -ge 1 ] ; then
+        printf "\e[1;33mWarning: "
+        printf "\e[1;39m$n \e[0m$1\n"
+    fi
+}
+
 # Not all projects use the same access policy - try to give some hints
 ansible_connection_test()
 {
-    if [ "${ansible_meta['ask_pass']}" == "true" ] ; then
-        printf "\e[1;33mWarning: "
-        printf "\e[1;39m$n\e[0m has ansible:ask_pass set to 'true'.\n"
-        printf "         You probably want to use the '-k' flag.\n"
-    fi
-    if [ -n "${ansible_meta['ssh_common_args']}" ] ; then
-        printf "\e[1;33mWarning: "
-        printf "\e[1;39m$n\e[0m has ansible:ssh_common_args set to '${ansible_meta['ssh_common_args']}'.\n"
-        printf "         Please check your ssh configs for that host if you encounter problems.\n"
-    fi
-    for l in connect_timeout scp_if_ssh ; do
-        if [ -n "${ansible_meta[$l]}" ] ; then
-            printf "\e[1;33mWarning: "
-            printf "\e[1;39m$n\e[0m has ansible:$l set to '${ansible_meta[$l]}'.\n"
-            printf "         Please control your (.)ansible.cfg if you encounter problems.\n"
-        fi
+    for o in ${!ansible_meta[@]} ; do
+        case $o in
+            ask_pass)
+                if [ ${ansible_meta[$o]} == "true" ] ; then
+                    print_warning "has ansible:ask_pass set to 'true'. You probably want to use the '-k' flag."
+                fi
+            ;;
+            ask_become_pass)
+                if [ ${ansible_meta[$o]} == "true" ] ; then
+                    print_warning "has ansible:ask_become_pass set to 'true'. You probably want to use something like '--become --become-user root -K' as flags."
+                fi
+            ;;
+            connect_timeout)
+                if [ ${ansible_meta[$o]} -gt $ansible_timeout ] ; then
+                    print_warning ""
+                fi
+            ;;
+            ssh_common_args)
+                print_warning "has ansible:ssh_common_args set to '${ansible_meta['ssh_common_args']}'. Please check your ssh configs for that host if you encounter problems."
+            ;;
+            scp_if_ssh)
+                if [ ${ansible_meta[$o]} == "true" ] ; then
+                    print_warning "has ansible:$o set to '${ansible_meta[$o]}'. Please control your (.)ansible.cfg if you encounter problems.\n"
+                fi
+            ;;
+            *)
+            ;;
+        esac
     done
 }
 
