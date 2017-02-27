@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-5-gafd9db6
+#** Version: v1.3-6-gc0060e8
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -730,7 +730,7 @@ ansible_connection_test()
             ;;
             user)
                 if [ -n "${ansible_meta[$o]}" ] ; then
-                    print_warning "has set a certain user to be required for connecting. You might want to set '-u ${ansible_meta[$o]}'."
+                    print_warning "has set a certain user to be required for connecting. You might want to set '-u ${ansible_meta[$o]}'. Usually this is already set in the backend via the 'ansible_user' parameter"
                 fi
             ;;
             *)
