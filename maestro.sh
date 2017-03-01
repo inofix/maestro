@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-7-gb21a957
+#** Version: v1.2-77-ge1265de
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1516,18 +1516,18 @@ case $1 in
         for d in ${inventorydirs[@]} ; do
             $_find "$d/nodes/" -type d |
                 $_sed 's;'$d'/nodes/;'$inventorydir'/nodes/;' |
-                $_xargs $_mkdir -p
+                $_xargs --no-run-if-empty $_mkdir -p
             $_find "$d/classes/" -type d |
                 $_sed 's;'$d'/classes/;'$inventorydir'/classes/;' |
-                $_xargs $_mkdir -p
+                $_xargs --no-run-if-empty $_mkdir -p
             $_find "$d/nodes/" -name "*.yml" |
                 $_sed \
                   's;\('$d'/nodes/\)\(.*\);\1\2 '$inventorydir'/nodes/\2;' |
-                $_xargs -r -n 2 $_ln -s || true
+                $_xargs --no-run-if-empty --max-args 2 $_ln -s || true
             $_find "$d/classes/" -name "*.yml" |
                 $_sed \
                   's;\('$d'/classes/\)\(.*\);\1\2 '$inventorydir'/classes/\2;' |
-                $_xargs -r -n 2 $_ln -s || true
+                $_xargs --no-run-if-empty --max-args 2 $_ln -s || true
         done
         echo "Re-connect ansible to our reclass inventory"
         [ ! -f "$inventorydir/hosts" ] || $_rm "$inventorydir/hosts"
