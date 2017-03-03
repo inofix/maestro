@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.2-77-ge1265de
+#** Version: v1.2-78-gf411a91
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1564,6 +1564,10 @@ EOF
             echo "  scp_if_ssh = $Ansible_scp_if_ssh"
             echo "-EOF-"
 
+        fi
+        if [ -z "$ANSIBLE_CONFIG" ] ; then
+            ANSIBLE_CONFIG="$maestrodir/ansible.cfg"
+            export ANSIBLE_CONFIG
         fi
         echo "Installing all necessary ansible-galaxy roles"
         for f in ${playbookdirs[@]}/${galaxyroles} ; do
