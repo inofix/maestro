@@ -1,6 +1,6 @@
 #!/bin/bash -e
-########################################################################
-#** Version: v1.2-78-gf411a91
+######################################################################## 
+#** Version: v1.3-14
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -42,7 +42,7 @@ conffile=maestro
 ### {{{
 
 # some "sane" ansible default values
-ansible_managed="Ansible managed: {file} modified on %Y-%m-%d %H:%M:%S by {uid} on {host}"
+ansible_managed="Ansible managed. All local changes will be lost!"
 ansible_timeout="60"
 ansible_scp_if_ssh="True"
 ansible_galaxy_roles=".ansible-galaxy-roles"
