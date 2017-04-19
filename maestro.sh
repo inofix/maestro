@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ######################################################################## 
-#** Version: v1.3-14
+#** Version: v1.3-19-g209ec10
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -299,6 +299,11 @@ while true ; do
         -q|--quiet)
             verbose="0"
         ;;
+#*  --version|-V                    print version information and exit
+        -V|--version)
+            print_version
+            exit
+        ;;
 #TODO actually fix all functions to respect the verbose parameter..
 #*  --verbose|-v [level]            print out what is done ([0]:quiet [1..])
         -v*|--v*)
@@ -308,11 +313,6 @@ while true ; do
                 shift
                 verbose=$1
             fi
-        ;;
-#*  --version|-V                    print version information and exit
-        -V|--version)
-            print_version
-            exit
         ;;
 #*  --workdir|-w directory          manually specify a temporary workdir
         -w|--workdir)
