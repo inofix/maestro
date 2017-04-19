@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ######################################################################## 
-#** Version: v1.3-19-g209ec10
+#** Version: v1.3-20-g51d76de
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1264,7 +1264,7 @@ unfold_all()
                                 break
                             elif [ 1 -eq $rv ] ; then
                                 printf "      found '$f' in storage dir "
-                                printf " '${storagedirs[$i]}/$t'"
+                                printf " '${storagedirs[$j]}/$t'"
                                 if [ 0 -eq "$force" ] ; then
                                     printf ", merging (--force)!\n"
                                     answer=0
