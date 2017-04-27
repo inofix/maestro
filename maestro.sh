@@ -1,6 +1,6 @@
 #!/bin/bash -e
-######################################################################## 
-#** Version: v1.3-22-g723c18c
+########################################################################
+#** Version: v1.3-23-gd94b9d3
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -951,7 +951,7 @@ list_classes()
     list_node $n
     for c in ${classes[@]} ; do
         printf "\e[0;35m - $c\n"
-    done | $_sort
+    done | $_sort_or_not_sort
     printf "\e[0;39m"
 }
 
@@ -1618,9 +1618,24 @@ EOF
         get_nodes
         process_nodes list_applications ${nodes[@]}
     ;;
-#*  list-classes (lsc)              list classes sorted by hosts
+#*  list-classes (lsc) [option]    list classes sorted by hosts
+#*                                 options:
+#*                                 --alphabetical do not sort in order of
+#*                                                processing but alphabetically
     lsc|list-c*)
         get_nodes
+        shift
+        _sort_or_not_sort="cat"
+        case $1 in
+            -a|-alph*)
+                _sort_or_not_sort="$_sort"
+            ;;
+            "")
+            ;;
+            *)
+                die "option '$1' not supported"
+            ;;
+        esac
         process_nodes list_classes ${nodes[@]}
     ;;
 #*  list-distro-packages            list app package names for the hosts distro
