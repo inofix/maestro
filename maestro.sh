@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-23-gd94b9d3
+#** Version: v1.3-24-g9cd6505
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1774,11 +1774,13 @@ EOF
         shift
         for d in ${playbookdirs[@]} ; do
             printf "\e[1;33mIn $d we found the string here:\e[0m\n"
-            $_grep --color -Hn -R -e "{{[a-zA-Z0-9_+ ]*${1}[a-zA-Z0-9_+ ]*}}" $d || true
+            $_grep --color -Hn -R -e "{{[a-zA-Z0-9_+ ]*${1}[a-zA-Z0-9_+ ]*}}" \
+                                -e "^ *${1}:$" $d || true
         done
         for d in $maestrodir/$ansible_galaxy_roles/* ; do
             printf "\e[1;33mIn $d we found the string here:\e[0m\n"
-            $_grep --color -Hn -R -e "{{[a-zA-Z0-9_+ ]*${1}[a-zA-Z0-9_+ ]*}}" $d || true
+            $_grep --color -Hn -R -e "{{[a-zA-Z0-9_+ ]*${1}[a-zA-Z0-9_+ ]*}}" \
+                                -e "^ *${1}:$" $d || true
         done
     ;;
 #*  search-external pattern         show in which file an 'external' (maestro)
