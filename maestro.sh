@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-25-g795c0a7
+#** Version: v1.3-26-g87f3b6f
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1775,7 +1775,10 @@ EOF
         for d in ${playbookdirs[@]} $maestrodir/$ansible_galaxy_roles/* ; do
             printf "\e[1;33mIn $d we found the string here:\e[0m\n"
             $_grep --color -Hn -R \
-                    -e "{{ *[a-zA-Z0-9_+\.]*${1}[][a-zA-Z0-9_+\.]* *}}" \
+                    -e "{{ *${1} *}}" \
+                    -e "{{ *[][a-zA-Z0-9_+\.]*[[\.]${1}[]\.][][a-zA-Z0-9_+\.]* *}}" \
+                    -e "{{ *[][a-zA-Z0-9_+\.]*[]\.]${1} *}}" \
+                    -e "{{ *${1}[[\.][][a-zA-Z0-9_+\.]* *}}" \
                     -e "^ *${1}:$" $d || true
         done
     ;;
