@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-26-g87f3b6f
+#** Version: v1.3-27-g85b3eba
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1410,7 +1410,7 @@ case $1 in
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $@ $p
+        $_ansible_playbook ${ansible_verbose} -l "$hostpattern" $pass_ask_pass $ansible_root -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $@ $p
     ;;
 #*  ansible-play-loop (ploop) play itemkey=itemval0:.. '[ansible-extra-vars] ..'
 #*                                 [ansible-option]..
