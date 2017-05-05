@@ -1,6 +1,6 @@
 #!/bin/bash -e
-######################################################################## 
-#** Version: v1.3-20-g51d76de
+########################################################################
+#** Version: v1.3-27-g85b3eba
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -951,7 +951,7 @@ list_classes()
     list_node $n
     for c in ${classes[@]} ; do
         printf "\e[0;35m - $c\n"
-    done | $_sort
+    done | $_sort_or_not_sort
     printf "\e[0;39m"
 }
 
@@ -1358,25 +1358,38 @@ case $1 in
             export ANSIBLE_CONFIG
         fi
     ;;&
+#*  ansible-play-help (aph) play   print the help text for a given play.
+    ansible-play-help|aph)
+        shift
+        o=$1
+        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name "$o.yml" )"
+        if [ -f "$p" ] ; then
+            printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
+            $_grep "^#\* " $p | $_sed 's;^#\*;  ;'
+            printf "\e[0;39m"
+        else
+            die "No such play found $o: $p"
+        fi
+    ;;
 #*  ansible-plays-list (apls)       list all available plays (see 'playbookdir')
 #*                                  in your config (with explanation).
     ansible-plays-list|apls|pls)
-    foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
-    for p in ${foundplays[@]} ; do
-        o=${p%.yml}
-        printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
-        $_grep "^#\* " $p | $_sed 's;^#\*;  ;'
-        printf "\e[0;39m"
-    done
+        foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
+        for p in ${foundplays[@]} ; do
+            o=${p%.yml}
+            printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
+            $_grep "^#\* " $p | $_sed 's;^#\*;  ;'
+            printf "\e[0;39m"
+        done
     ;;
 #*  ansible-plays-short-list (apsl) list all available plays (see 'playbookdir')
 #*                                  in your config (short).
     ansible-plays-short-list|apsl|psl)
-    foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
-    for p in ${foundplays[@]} ; do
-        o=${p%.yml}
-        printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;39m\n"
-    done
+        foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
+        for p in ${foundplays[@]} ; do
+            o=${p%.yml}
+            printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;39m\n"
+        done
     ;;
 #*  ansible-play (play) play '[ansible-extra-vars] ..' [ansible-option]..
 #*                                  wrapper to ansible which also includes
@@ -1397,7 +1410,7 @@ case $1 in
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $@ $p
+        $_ansible_playbook ${ansible_verbose} -l "$hostpattern" $pass_ask_pass $ansible_root -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $@ $p
     ;;
 #*  ansible-play-loop (ploop) play itemkey=itemval0:.. '[ansible-extra-vars] ..'
 #*                                 [ansible-option]..
@@ -1605,9 +1618,24 @@ EOF
         get_nodes
         process_nodes list_applications ${nodes[@]}
     ;;
-#*  list-classes (lsc)              list classes sorted by hosts
+#*  list-classes (lsc) [option]    list classes sorted by hosts
+#*                                 options:
+#*                                 --alphabetical do not sort in order of
+#*                                                processing but alphabetically
     lsc|list-c*)
         get_nodes
+        shift
+        _sort_or_not_sort="cat"
+        case $1 in
+            -a|-alph*)
+                _sort_or_not_sort="$_sort"
+            ;;
+            "")
+            ;;
+            *)
+                die "option '$1' not supported"
+            ;;
+        esac
         process_nodes list_classes ${nodes[@]}
     ;;
 #*  list-distro-packages            list app package names for the hosts distro
@@ -1744,13 +1772,14 @@ EOF
 #*                                  parameter as they overlap
     search-in-playbooks|search-play*)
         shift
-        for d in ${playbookdirs[@]} ; do
+        for d in ${playbookdirs[@]} $maestrodir/$ansible_galaxy_roles/* ; do
             printf "\e[1;33mIn $d we found the string here:\e[0m\n"
-            $_grep --color -Hn -R -e "{{[a-zA-Z0-9_+ ]*${1}[a-zA-Z0-9_+ ]*}}" $d || true
-        done
-        for d in $maestrodir/$ansible_galaxy_roles/* ; do
-            printf "\e[1;33mIn $d we found the string here:\e[0m\n"
-            $_grep --color -Hn -R -e "{{[a-zA-Z0-9_+ ]*${1}[a-zA-Z0-9_+ ]*}}" $d || true
+            $_grep --color -Hn -R \
+                    -e "{{ *${1} *}}" \
+                    -e "{{ *[][a-zA-Z0-9_+\.]*[[\.]${1}[]\.][][a-zA-Z0-9_+\.]* *}}" \
+                    -e "{{ *[][a-zA-Z0-9_+\.]*[]\.]${1} *}}" \
+                    -e "{{ *${1}[[\.][][a-zA-Z0-9_+\.]* *}}" \
+                    -e "^ *${1}:$" $d || true
         done
     ;;
 #*  search-external pattern         show in which file an 'external' (maestro)
