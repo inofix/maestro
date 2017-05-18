@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-27-g85b3eba
+#** Version: v1.3-28-ga6b72f5
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1697,12 +1697,12 @@ EOF
         print_plain_reclass
     ;;
 #*  reclass-show-parameters         print all parameters set in reclass
-    reclass-show*)
+    reclass-show*|rsh)
         get_nodes
         process_nodes parse_node_whole_reclass_list ${nodes[@]}
     ;;
 #*  reclass-search-parameter        print a certain parameter set in reclass
-    reclass-search*)
+    reclass-search*|rs)
         shift
         target_var="$1"
         get_nodes
