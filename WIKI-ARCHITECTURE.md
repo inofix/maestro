@@ -63,26 +63,26 @@ Please find here a simple overview of how the classes can be structured with reu
                   ===================================
 
 
-                             location
-             admin
-                             ^
-                 ^          /               service -----> app (application)
-                  \        /
-                   \      /                   ^
-                                             /
-                    project
-                                         role
-                            ^
-                             \          ^
-                              \        /
+                      admin
+            location
+                        ^
+               ^ ^      |                 service -----> app (application)
+               |  \     |
+               |   \    |                   ^
+               |                           /
+               |     project
+               |                       role
+               |           ^
+               |            \          ^
+               |             \       /
 
-                                 (Node) -------> host (node + resources)
+              host <--------- (Node)
 
-                                   |
-                                   |
-                                   v
+                                  |
+                                  |
+                                  v
 
-                                manager
+                               manager
 
 **Pic. 2:** Top-level classes and their relation to each other and to the 'node'
 
