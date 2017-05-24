@@ -90,9 +90,9 @@ As the parameters will often be overwritten in other classes, it is not always e
 
 
 
-## Configuration Management ##
+# Configuration Management #
 
-### Integration Overview ###
+## Integration ##
 
 [Maestro](https://github.com/inofix/maestro)[^1](https://github.com/inofix/maestro/wiki/Architecture/#footnote) primarily uses [Ansible](https://www.ansible.com/)[^4](https://github.com/inofix/maestro/wiki/Architecture/#footnote) to get tasks done. Ansible is very simple and has a minimum of requirements on the client side.
 
@@ -104,7 +104,7 @@ On some of our projects we have integrated [salt](https://saltstack.com/)[^7](ht
 
 An old project that was started with [cfengine2](https://cfengine.com/)[^8](https://github.com/inofix/maestro/wiki/Architecture/#footnote) was also integrated with maestro, here just the config files are organized via maestro the old code continues to work with them..
 
-### Ansible Playbooks ###
+## Ansible Playbooks ##
 
 For the moment we have this interface between maestro and some ansible roles ready for the public eye: [common-playbooks](https://github.com/inofix/common-playbooks)[^5](https://github.com/inofix/maestro/wiki/Architecture/#footnote).
 
@@ -114,7 +114,7 @@ Further, as mentioned above, the ideal would be to only use parameters defined i
 
 A bit more translation work for the sake of interchangeability, reusability, and comparability. 
 
-## Visualization ##
+# Visualization #
 
 The json/yaml interface can easily be consumed (and even written) with the web-browser. We actually plan to provide a portlet for [liferay](https:www.liferay.com)[^9](https://github.com/inofix/maestro/wiki/Architecture/#footnote), as the portal already provides the permission management and it is one of our core services already. The web-view would also allow for nice graphs an for integration with other services, such as backup or monitoring.
 
