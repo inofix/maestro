@@ -1,4 +1,4 @@
-# maestro
+# Maestro README #
 Orchestrate any number of orchestras (i.e. config management environements).
 
 ![Maestro Logo](maestro.png "A thumbsketch of what this is all about..")
