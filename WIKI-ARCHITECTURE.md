@@ -44,6 +44,7 @@ To get the parameters set, actions taken or config files copied to the respectiv
                               |      |      |  |   |     /  /
                               V      V      V  V   V    V /
         MACHINES:         [ host0 ][ host1 ] ... [ hostN ]
+
 **Pic. 1:** A visualization of how the elements fit together
 
 We plan to provide yaml and json interfaces to maestro, which will then be visualized on the web-browser by javascript and html.
@@ -82,13 +83,27 @@ Please find here a simple overview of how the classes can be structured with reu
                                    v
 
                                 manager
+
 **Pic. 2:** Top-level classes and their relation to each other and to the 'node'
 
 Ideally the actual parameters are namespaced, i.e. preceeded with the class tree names they are initially defined in, either stored as dictionaries or in flat form, e.g.:
 * app[apache][config_files]
 * app__apache__config_files
 
-As the parameters will often be overwritten in other classes, it is not always easy to find them. Maestro has several search options for this case. But to render life less complex, there is more one can do. Pic. 2 shows the relation of the classes. Wherever possible, let the outer classes define parameters and the inner classes consume resp. overwrite them, thus the outer classes are more generic and can easily be shared between projects or even publicly. As these "outer"-parameters have a better visibility, they are the first ones you want to use in your configuration management engine tasks -- while you might want to avoid the parameters defined (and used) in the inner classes altogether in your tasks, as those might not be available in your next project.
+As the parameters will often be overwritten in other classes, it is not always easy to find them. Maestro has several search options for this case. But to render life less complex, there is more one can do.
+
+There are two ways how the classes themselfes can be grouped. The first, and explicit one, is by the directory hierarchy in the file system (resp. in the repository). The second, and only implicit one, is by usage.
+
+The explicit hierarchy can be seen in the example of the different applications in the app directory, where a certain version of an application relies on the application class etc., e.g. (the later relies on the earlier):
+* classes/app/java/init.yml
+* classes/app/java/jre/init.yml
+* classes/app/java/jre/8.yml
+
+Pic. 2 shows the ideal usage and thus the implicit relation of the classes. As mentioned, this is only an ideological, implicit, concept, without any final structure -- a recommended split into "inner" and "outer" classes, where the inner classes make use of the outer classes and not vice versa.
+
+With other words: wherever possible, use the classes in such a way that inner and outer classes emerge, i.e. by reference and by letting the outer classes define parameters and the inner classes consume resp. overwrite them. Thus the outer classes become more generic and can easily be shared between projects or even publicly.
+
+As these "outer"-parameters have a better visibility, they are the first ones you want to use in your configuration management engine tasks -- while you might want to avoid the parameters defined (and used) in the inner classes altogether in your tasks, as those might not be available in your next project.
 
 
 
