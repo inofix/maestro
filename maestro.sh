@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-45-g00e5ede
+#** Version: v1.3-46-g6698c4b
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1381,7 +1381,7 @@ case $1 in
             done
         fi
     ;;
-#*  ansible-play (play) play '[ansible-extra-vars] ..' [ansible-option]..
+#*  ansible-play play '[ansible-extra-vars] ..' [ansible-option]..
 #*                                  wrapper to ansible which also includes
 #*                                  custom plays stored in the config
 #*                                  file as '$playbookdir'.
@@ -1402,8 +1402,8 @@ case $1 in
         fi
         $_ansible_playbook ${ansible_verbose} -l "$hostpattern" $pass_ask_pass $ansible_root -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $@ $p
     ;;
-#*  ansible-play-loop (ploop) play itemkey=itemval0:.. '[ansible-extra-vars] ..'
-#*                                 [ansible-option]..
+#*  ansible-play-loop play itemkey=itemval0:.. '[ansible-extra-vars] ..' \
+#*  [ansible-option]..
 #*                                  wrapper to ansible which also includes
 #*                                  custom plays stored in the config
 #*                                  file as '$playbookdir'. Unlike 'play'
@@ -1593,24 +1593,24 @@ EOF
             fi
         done
     ;;
-#*  shortlist (l)                   list nodes - but just the hostname
+#*  shortlist                       list nodes - but just the hostname
     l|shortlist)
         get_nodes
         process_nodes list_node_short ${nodes[@]}
     ;;
-#*  list (ls)                       list nodes
+#*  list                            list nodes
     ls|list*)
         get_nodes
         process_nodes list_node ${nodes[@]}
     ;;
-#*  list-applications (lsa)         list applications sorted by hosts
+#*  list-applications               list applications sorted by hosts
     lsa|list-a*)
         get_nodes
         process_nodes list_applications ${nodes[@]}
     ;;
-#*  list-classes (lsc) [option]    list classes sorted by hosts
-#*                                 options:
-#*                                 --alphabetical do not sort in order of
+#*  list-classes [option]           list classes sorted by hosts
+#*                                  options:
+#*                                    --alphabetical do not sort in order of
 #*                                                processing but alphabetically
     lsc|list-c*)
         get_nodes
@@ -1633,24 +1633,23 @@ EOF
         get_nodes
         process_nodes list_distro_packages ${nodes[@]}
     ;;
-#*  list-merge-customs (lsmc)       show custom storage merge rules
+#*  list-merge-customs              show custom storage merge rules
     lsmc|list-merge-c*)
         get_nodes
         process_nodes list_node_re_merge_custom ${nodes[@]}
     ;;
-#*  list-storage (lss)              show storage directories (for merging)
+#*  list-storage                    show storage directories (for merging)
     lss|list-storage)
         get_nodes
         process_nodes list_node_stores ${nodes[@]}
     ;;
-#*  list-types (lst)                show maschine type and location
+#*  list-types                      show maschine type and location
     lst|list-types)
         get_nodes
         process_nodes list_node_type ${nodes[@]}
     ;;
 ####TODO rename to fold/unfold ??
-#*  merge (mg) [subdir] [rsync-option]..
-#*                                  just merge all storage directories
+#*  merge [subdir] [rsync-option].. just merge all storage directories
 #*                                  (only under subdir if specified)
 #*                                  flat to $workdir with rsync
     merge|merge-a*|mg)
@@ -1667,7 +1666,7 @@ EOF
         fi
         process_nodes merge_all ${nodes[@]}
     ;;
-#*  merge-custom (mc) [subdir] [rsync-option]..
+#*  merge-custom [subdir] [rsync-option]..
 #*                                  merge after custom rules defined in reclass
 #*                                  in $workdir (just subdir if specified),
 #*                                  then move to its target destination
@@ -1790,13 +1789,13 @@ EOF
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
         $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" $inventorydir/classes || true
     ;;
-#*  status (ss)                     test host by ssh and print distro and ip(s)
+#*  status                          test host by ssh and print distro and ip(s)
     ss|status)
         get_nodes
         process_nodes connect_node ${nodes[@]}
     ;;
 ####TODO rename to fold/unfold ??
-#*  unmerge (umg) [rsync-option]..  copy the content of $workdir back to the
+#*  unmerge [rsync-option]..        copy the content of $workdir back to the
 #*                                  storage directories - guess or ask..
     unmerge|umg)
         shift
