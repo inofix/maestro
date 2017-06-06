@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-46-g6698c4b
+#** Version: v1.3-47-gf1a10d2
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1617,7 +1617,7 @@ EOF
         shift
         _sort_or_not_sort="cat"
         case $1 in
-            -a|-alph*)
+            -a|--alph*)
                 _sort_or_not_sort="$_sort"
             ;;
             "")
