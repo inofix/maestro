@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-28-ga6b72f5
+#** Version: v1.3-47-gf1a10d2
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1358,40 +1358,30 @@ case $1 in
             export ANSIBLE_CONFIG
         fi
     ;;&
-#*  ansible-play-help (aph) play   print the help text for a given play.
-    ansible-play-help|aph)
+#*  ansible-plays-list [play]       list all available plays (see 'playbookdir')
+#*                                  in your config, or print the details of the
+#*                                  one play specified.
+    ansible-plays-list|apls|pls)
         shift
         o=$1
-        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name "$o.yml" )"
-        if [ -f "$p" ] ; then
-            printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
-            $_grep "^#\* " $p | $_sed 's;^#\*;  ;'
-            printf "\e[0;39m"
+        if [ -n "$o" ] ; then
+            p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name "$o.yml" )"
+            if [ -f "$p" ] ; then
+                printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
+                $_grep "^#\* " $p | $_sed 's;^#\*;  ;'
+                printf "\e[0;39m"
+            else
+                die "No such play found $o: $p"
+            fi
         else
-            die "No such play found $o: $p"
+            foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
+            for p in ${foundplays[@]} ; do
+                o=${p%.yml}
+                printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;39m\n"
+            done
         fi
     ;;
-#*  ansible-plays-list (apls)       list all available plays (see 'playbookdir')
-#*                                  in your config (with explanation).
-    ansible-plays-list|apls|pls)
-        foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
-        for p in ${foundplays[@]} ; do
-            o=${p%.yml}
-            printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
-            $_grep "^#\* " $p | $_sed 's;^#\*;  ;'
-            printf "\e[0;39m"
-        done
-    ;;
-#*  ansible-plays-short-list (apsl) list all available plays (see 'playbookdir')
-#*                                  in your config (short).
-    ansible-plays-short-list|apsl|psl)
-        foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
-        for p in ${foundplays[@]} ; do
-            o=${p%.yml}
-            printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;39m\n"
-        done
-    ;;
-#*  ansible-play (play) play '[ansible-extra-vars] ..' [ansible-option]..
+#*  ansible-play play '[ansible-extra-vars] ..' [ansible-option]..
 #*                                  wrapper to ansible which also includes
 #*                                  custom plays stored in the config
 #*                                  file as '$playbookdir'.
@@ -1412,8 +1402,8 @@ case $1 in
         fi
         $_ansible_playbook ${ansible_verbose} -l "$hostpattern" $pass_ask_pass $ansible_root -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $@ $p
     ;;
-#*  ansible-play-loop (ploop) play itemkey=itemval0:.. '[ansible-extra-vars] ..'
-#*                                 [ansible-option]..
+#*  ansible-play-loop play itemkey=itemval0:.. '[ansible-extra-vars] ..' \
+#*  [ansible-option]..
 #*                                  wrapper to ansible which also includes
 #*                                  custom plays stored in the config
 #*                                  file as '$playbookdir'. Unlike 'play'
@@ -1603,31 +1593,31 @@ EOF
             fi
         done
     ;;
-#*  shortlist (l)                   list nodes - but just the hostname
+#*  shortlist                       list nodes - but just the hostname
     l|shortlist)
         get_nodes
         process_nodes list_node_short ${nodes[@]}
     ;;
-#*  list (ls)                       list nodes
+#*  list                            list nodes
     ls|list*)
         get_nodes
         process_nodes list_node ${nodes[@]}
     ;;
-#*  list-applications (lsa)         list applications sorted by hosts
+#*  list-applications               list applications sorted by hosts
     lsa|list-a*)
         get_nodes
         process_nodes list_applications ${nodes[@]}
     ;;
-#*  list-classes (lsc) [option]    list classes sorted by hosts
-#*                                 options:
-#*                                 --alphabetical do not sort in order of
+#*  list-classes [option]           list classes sorted by hosts
+#*                                  options:
+#*                                    --alphabetical do not sort in order of
 #*                                                processing but alphabetically
     lsc|list-c*)
         get_nodes
         shift
         _sort_or_not_sort="cat"
         case $1 in
-            -a|-alph*)
+            -a|--alph*)
                 _sort_or_not_sort="$_sort"
             ;;
             "")
@@ -1643,24 +1633,23 @@ EOF
         get_nodes
         process_nodes list_distro_packages ${nodes[@]}
     ;;
-#*  list-merge-customs (lsmc)       show custom storage merge rules
+#*  list-merge-customs              show custom storage merge rules
     lsmc|list-merge-c*)
         get_nodes
         process_nodes list_node_re_merge_custom ${nodes[@]}
     ;;
-#*  list-storage (lss)              show storage directories (for merging)
+#*  list-storage                    show storage directories (for merging)
     lss|list-storage)
         get_nodes
         process_nodes list_node_stores ${nodes[@]}
     ;;
-#*  list-types (lst)                show maschine type and location
+#*  list-types                      show maschine type and location
     lst|list-types)
         get_nodes
         process_nodes list_node_type ${nodes[@]}
     ;;
 ####TODO rename to fold/unfold ??
-#*  merge (mg) [subdir] [rsync-option]..
-#*                                  just merge all storage directories
+#*  merge [subdir] [rsync-option].. just merge all storage directories
 #*                                  (only under subdir if specified)
 #*                                  flat to $workdir with rsync
     merge|merge-a*|mg)
@@ -1677,7 +1666,7 @@ EOF
         fi
         process_nodes merge_all ${nodes[@]}
     ;;
-#*  merge-custom (mc) [subdir] [rsync-option]..
+#*  merge-custom [subdir] [rsync-option]..
 #*                                  merge after custom rules defined in reclass
 #*                                  in $workdir (just subdir if specified),
 #*                                  then move to its target destination
@@ -1800,13 +1789,13 @@ EOF
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
         $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" $inventorydir/classes || true
     ;;
-#*  status (ss)                     test host by ssh and print distro and ip(s)
+#*  status                          test host by ssh and print distro and ip(s)
     ss|status)
         get_nodes
         process_nodes connect_node ${nodes[@]}
     ;;
 ####TODO rename to fold/unfold ??
-#*  unmerge (umg) [rsync-option]..  copy the content of $workdir back to the
+#*  unmerge [rsync-option]..        copy the content of $workdir back to the
 #*                                  storage directories - guess or ask..
     unmerge|umg)
         shift

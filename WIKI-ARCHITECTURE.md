@@ -1,7 +1,5 @@
 # The Basic Concepts #
 
-(latest version: https://github.com/inofix/maestro/blob/master/WIKI-ARCHITECTURE.md)
-
 ## Overview ##
 
 The central part of our host management solution is [maestro](https://github.com/inofix/maestro)[^1](https://github.com/inofix/maestro/wiki/Architecture/#footnote) (maestro.sh for the moment, but will probably be maestro.py one day).
