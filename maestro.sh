@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-28-ga6b72f5
+#** Version: v1.3-45-g00e5ede
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1358,38 +1358,28 @@ case $1 in
             export ANSIBLE_CONFIG
         fi
     ;;&
-#*  ansible-play-help (aph) play   print the help text for a given play.
-    ansible-play-help|aph)
+#*  ansible-plays-list [play]       list all available plays (see 'playbookdir')
+#*                                  in your config, or print the details of the
+#*                                  one play specified.
+    ansible-plays-list|apls|pls)
         shift
         o=$1
-        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name "$o.yml" )"
-        if [ -f "$p" ] ; then
-            printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
-            $_grep "^#\* " $p | $_sed 's;^#\*;  ;'
-            printf "\e[0;39m"
+        if [ -n "$o" ] ; then
+            p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name "$o.yml" )"
+            if [ -f "$p" ] ; then
+                printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
+                $_grep "^#\* " $p | $_sed 's;^#\*;  ;'
+                printf "\e[0;39m"
+            else
+                die "No such play found $o: $p"
+            fi
         else
-            die "No such play found $o: $p"
+            foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
+            for p in ${foundplays[@]} ; do
+                o=${p%.yml}
+                printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;39m\n"
+            done
         fi
-    ;;
-#*  ansible-plays-list (apls)       list all available plays (see 'playbookdir')
-#*                                  in your config (with explanation).
-    ansible-plays-list|apls|pls)
-        foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
-        for p in ${foundplays[@]} ; do
-            o=${p%.yml}
-            printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
-            $_grep "^#\* " $p | $_sed 's;^#\*;  ;'
-            printf "\e[0;39m"
-        done
-    ;;
-#*  ansible-plays-short-list (apsl) list all available plays (see 'playbookdir')
-#*                                  in your config (short).
-    ansible-plays-short-list|apsl|psl)
-        foundplays=( $($_find -L ${playbookdirs[@]} -maxdepth 1 -name "*.yml" | $_sort -u) )
-        for p in ${foundplays[@]} ; do
-            o=${p%.yml}
-            printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;39m\n"
-        done
     ;;
 #*  ansible-play (play) play '[ansible-extra-vars] ..' [ansible-option]..
 #*                                  wrapper to ansible which also includes
