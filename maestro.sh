@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-47-gf1a10d2
+#** Version: v1.3-48-g7fde9af
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1611,7 +1611,8 @@ EOF
 #*  list-classes [option]           list classes sorted by hosts
 #*                                  options:
 #*                                    --alphabetical do not sort in order of
-#*                                                processing but alphabetically
+#*                                                   processing but alpha-
+#*                                                   betically
     lsc|list-c*)
         get_nodes
         shift
