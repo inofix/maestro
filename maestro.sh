@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-48-g7fde9af
+#** Version: v1.3-49-gfd50d2e
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -253,7 +253,7 @@ while true ; do
 #*                                  (see reclass classes)
         -C|--class)
             shift
-            classfilter="$1"
+            classfilter="$1,$classfilter"
         ;;
 #*  --force|-f                      do not ask before changing anything (!-i)
         -f|--force)
@@ -292,8 +292,11 @@ while true ; do
 #*                                  from reclass (directory hierarchy)
         -P|--project)
             shift
+            if [ -n "$projectfilter" ] ; then
+                error "Only one projectfilter is supported, please use the classfilter (-C) instead"
+            fi
             projectfilter="$1"
-            classfilter="project.$1"
+            classfilter="&project.$1,$classfilter"
         ;;
 #*  --quiet                         equal to '--verbose 0'
         -q|--quiet)
@@ -925,11 +928,15 @@ get_nodes()
                    /^nodes:/ {node=0};\
                    /^  \w/ {if (node == 0) {print now $0}}' |\
             $_tr -d ":" | $_sort -r ) )
+
+#TODO handle bug with AND filters '&classname'
     if [ -n "$classfilter" ] ; then
         process_nodes process_classes ${nodes[@]}
         nodes=()
-        for a in ${classes_dict[$classfilter]//:/ } ; do
-            nodes=( ${nodes[@]} $a )
+        for c in ${classfilter//,/ } ; do
+            for a in ${classes_dict[$c]//:/ } ; do
+                nodes=( ${nodes[@]} $a )
+            done
         done
         classes_dict=()
     fi
