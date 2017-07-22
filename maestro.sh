@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-49-gfd50d2e
+#** Version: v1.3-50-gd5ad10f
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -296,7 +296,6 @@ while true ; do
                 error "Only one projectfilter is supported, please use the classfilter (-C) instead"
             fi
             projectfilter="$1"
-            classfilter="&project.$1,$classfilter"
         ;;
 #*  --quiet                         equal to '--verbose 0'
         -q|--quiet)
@@ -1335,6 +1334,7 @@ nodes=()
 #* actions:
 case $1 in
     ansible-play*|play|playloop|ploop)
+        classfilter="&project.$1,$classfilter"
         shift
         ansibleplaybook="$1"
         shift
