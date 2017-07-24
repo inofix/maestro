@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-50-gd5ad10f
+#** Version: v1.3-51-g1c1d910
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -253,7 +253,11 @@ while true ; do
 #*                                  (see reclass classes)
         -C|--class)
             shift
-            classfilter="$1,$classfilter"
+            if [ -n "$classfilter" ] ; then
+                classfilter="$1,$classfilter"
+            else
+                classfilter="$1"
+            fi
         ;;
 #*  --force|-f                      do not ask before changing anything (!-i)
         -f|--force)
@@ -1334,7 +1338,6 @@ nodes=()
 #* actions:
 case $1 in
     ansible-play*|play|playloop|ploop)
-        classfilter="&project.$1,$classfilter"
         shift
         ansibleplaybook="$1"
         shift
@@ -1348,8 +1351,16 @@ case $1 in
         if [ -n "$nodefilter" ] && [ -n "${nodefilter//*\.*/}" ] ; then
             nodefilter="${nodefilter}*"
         fi
-        if [ -n "$classfilter" ] && [ -n "$nodefilter" ] ; then
+        if [ -n "$projectfilter" ] && [ -n "$classfilter" ] && [ -n "$nodefilter" ] ; then
+            hostpattern="&project.$projectfilter,$classfilter,$nodefilter"
+        elif [ -n "$projectfilter" ] && [ -n "$classfilter" ] ; then
+            hostpattern="&project.$projectfilter,$classfilter"
+        elif [ -n "$projectfilter" ] && [ -n "$nodefilter" ] ; then
+            hostpattern="&project.$projectfilter,$nodefilter"
+        elif [ -n "$classfilter" ] && [ -n "$nodefilter" ] ; then
             hostpattern="$classfilter,$nodefilter"
+        elif [ -n "$projectfilter" ] ; then
+            hostpattern="$projectfilter"
         elif [ -n "$classfilter" ] ; then
             hostpattern="$classfilter"
         elif [ -n "$nodefilter" ] ; then
