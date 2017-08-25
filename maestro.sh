@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-52-g9568936
+#** Version: v1.3-54-g2b21001
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1337,9 +1337,9 @@ nodes=()
 
 #* actions:
 case $1 in
-    ansible-play*|play|playloop|ploop)
+    ansible*|play|playloop|ploop)
         shift
-        ansibleplaybook="$1"
+        ansibleaction="$1"
         shift
         get_nodes
         [ -n "$_ansible" ] || error "Missing system tool: ansible."
@@ -1376,9 +1376,23 @@ case $1 in
             export ANSIBLE_CONFIG
         fi
     ;;&
-#*  ansible-plays-list [play]       list all available plays (see 'playbookdir')
-#*                                  in your config, or print the details of the
-#*                                  one play specified.
+#*  ansible-module module '[ansible-module-arguments]' '[ansible-extra-vars] ..'\
+#*   [ansible-option]..             execute an ansible module.
+    ansible|ansible-module)
+        if [ "$1" != "" ] && [ "${1:0:1}" != "-" ] ; then
+            ansiblemoduleargs="$1"
+            shift
+        fi
+        if [ "$1" != "" ] && [ "${1:0:1}" != "-" ] ; then
+            ansibleextravars="$ansibleextravars $1"
+            shift
+        fi
+        ansibleoptions="$ansibleoptions $@"
+        $_ansible ${ansible_verbose} "$hostpattern" -m $ansibleaction -a "$ansiblemoduleargs" -e "workdir='$workdir' $ansibleextravars" $ansibleoptions
+    ;;
+#*  ansible-plays-list [play]       list all available playbooks (see
+#*                                  'playbookdir') in your config, or print
+#*                                  the details of the one play specified.
     ansible-plays-list|apls|pls)
         shift
         o=$1
@@ -1410,9 +1424,9 @@ case $1 in
             shift
         fi
         ansibleoptions="$ansibleoptions $@"
-        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${ansibleplaybook}.yml)"
+        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${ansibleaction}.yml)"
         [ -n "$p" ] ||
-            error "There is no play called ${ansibleplaybook}.yml in ${playbookdirs[@]}"
+            error "There is no play called ${ansibleaction}.yml in ${playbookdirs[@]}"
         echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
@@ -1437,9 +1451,9 @@ case $1 in
             shift
         fi
         ansibleoptions="$ansibleoptions $@"
-        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${ansibleplaybook}.yml)"
+        p="$($_find -L ${playbookdirs[@]} -maxdepth 1 -name ${ansibleaction}.yml)"
         [ -n "$p" ] ||
-            error "There is no play called ${ansibleplaybook}.yml in ${playbookdirs[@]}"
+            error "There is no play called ${ansibleaction}.yml in ${playbookdirs[@]}"
         for iparam in ${itemparams//:/ } ; do
 
             echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass $ansible_root -e 'workdir="$workdir" $itemname="{{ $iparam }}" $ansibleextravars' $ansibleoptions $p"
@@ -1712,7 +1726,7 @@ EOF
 #*  reclass-search-parameter        print a certain parameter set in reclass
     reclass-search*|rs)
         shift
-        target_var="${1//./:}"
+        target_var="${1}"
         get_nodes
         process_nodes parse_node_custom_var_list ${nodes[@]}
     ;;
