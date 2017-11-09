@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-54-g2b21001
+#** Version: v1.3-55-gcf20e0b
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1377,7 +1377,8 @@ case $1 in
         fi
     ;;&
 #*  ansible-module module '[ansible-module-arguments]' '[ansible-extra-vars] ..'\
-#*   [ansible-option]..             execute an ansible module.
+#*   [ansible-option]..             execute an ansible module. (E.g.
+#*                                  `debug 'msg="{{ certificate.main }}"'`)
     ansible|ansible-module)
         if [ "$1" != "" ] && [ "${1:0:1}" != "-" ] ; then
             ansiblemoduleargs="$1"
