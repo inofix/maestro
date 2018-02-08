@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-56-g1cada0d
+#** Version: v1.3-57-g45a7492
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -105,6 +105,9 @@ verbose="1"
 unmerge_ignore=(
     "_packages.wiki"
 )
+
+# variable name of the host resources in the reclass knowledge base
+knowledge_base_parameter_resources="host:resource"
 
 ### }}}
 
@@ -1684,7 +1687,7 @@ EOF
     ;;
 #*  list-resources                  show the machines resource config
     lsr|list-resources)
-        target_var='host:resource'
+        target_var=$knowledge_base_parameter_resources
         get_nodes
         process_nodes parse_node_custom_var_list ${nodes[@]}
     ;;
