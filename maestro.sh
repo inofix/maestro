@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-55-gcf20e0b
+#** Version: v1.3-56-g1cada0d
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1681,6 +1681,12 @@ EOF
     lst|list-types)
         get_nodes
         process_nodes list_node_type ${nodes[@]}
+    ;;
+#*  list-resources                  show the machines resource config
+    lsr|list-resources)
+        target_var='host:resource'
+        get_nodes
+        process_nodes parse_node_custom_var_list ${nodes[@]}
     ;;
 ####TODO rename to fold/unfold ??
 #*  merge [subdir] [rsync-option].. just merge all storage directories
