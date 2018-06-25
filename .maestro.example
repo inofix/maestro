@@ -5,8 +5,9 @@
 
 # git repos used (use the same name as in the dir arrays below)
 toclone=(
-    ["common_inv"]="https://github.com/zwischenloesung/common-inv"
-    ["common_playbooks"]="https://github.com/zwischenloesung/common-inv"
+    ["common_inv"]="https://github.com/inofix/common-inv"
+    ["example_inv"]="https://github.com/inofix/example-inv"
+    ["common_playbooks"]="https://github.com/inofix/common-inv"
 )
 
 # a local dir for (semi-)temporary data of the hosts (can savely be removed if necessary)
@@ -15,6 +16,7 @@ workdir="$maestrodir/workdir"
 # the reclass inventories will constitute the knowledge base for the meta data
 inventorydirs=(
     ["common_inv"]="$maestrodir/common_inv"
+    ["example_inv"]="$maestrodir/example_inv"
 )
 
 # ansible/debops instructions
