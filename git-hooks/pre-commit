@@ -1,7 +1,8 @@
 #!/bin/sh
 # This is a simple solution to always update the version if the main script
-# changes.. The repo must be tagged first! If someone has a better idea,
-# please send it to me (mic at inofix.ch).
+# changes.. Just link this script into your .git/hooks directory and make
+# sure the repo was tagged prior to your next commit!
+# If someone has a better idea, please send it to me (mic at inofix.ch).
 
 file=maestro.sh
 
