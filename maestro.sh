@@ -178,7 +178,7 @@ _sudo="/usr/bin/sudo"
 [ -f $ansible_connect ] || ansible_connect="$(command -v reclass-ansible)"
 
 #display error if it still doesn't exist
-[ -f $ansible_connect ] || echo "Path to reclass-ansible is missing!"; exit 0;
+[ -f $ansible_connect ] || echo "Path to reclass-ansible is missing!";
 
 
 
@@ -1583,12 +1583,19 @@ case $1 in
                 $_xargs --no-run-if-empty --max-args 2 $_ln -s || true
         done
         echo "Re-connect ansible to our reclass inventory"
-        # remove hosts file if it exists
-        [ -f "$inventorydir/hosts" ] && $_rm "$inventorydir/hosts"
         # remove reclass config if it exists
         [ -f "$inventorydir/reclass-config.yml" ] && $_rm "$inventorydir/reclass-config.yml"
-        # create symlink to reclass-ansible
-        $_ln -s $ansible_connect "$inventorydir/hosts"
+
+        # abort if hosts file is a dir
+        [ -d "$inventorydir/hosts" ] && echo "$inventorydir/hosts is a dir. Aborting."; exit 0;
+        # check if hosts file if it exists and links correct
+        if ! [ -f "$inventorydir/hosts" && -L "$file" ] ; then
+            # create symlink to reclass-ansible
+            $_ln -s $ansible_connect "$inventorydir/hosts"
+        elif ! [$(readlink $inventorydir/hosts) = "$ansible_connect"]; then
+            echo "Notice: $inventorydir/hosts is linking to $(readlink $inventorydir/hosts)"
+        fi
+
         if [ -z "$_pre" ] ; then
             $_cat > "$inventorydir/reclass-config.yml" << EOF
 storage_type: yaml_fs
