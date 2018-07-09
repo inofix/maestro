@@ -92,8 +92,8 @@ localdirs=(
     ["vagrant_boxes"]=""
 )
 
-# this is the hosts link
-ansible_connect=/usr/share/reclass/reclass-ansible
+# this is the hosts link. If the file doesn't exists we try to get it from the PATH.
+ansible_connect="/usr/share/reclass/reclass-ansible"
 
 # options to pass to ansible (see also -A/--ansible-options)
 ansibleoptions=""
@@ -173,16 +173,26 @@ danger_tools=(
 # special case sudo (not mandatory)
 _sudo="/usr/bin/sudo"
 
+
+#check if ansible_connect exists
+[ -f $ansible_connect ] || ansible_connect="$(command -v reclass-ansible)"
+
+#display error if it still doesn't exist
+[ -f $ansible_connect ] || echo "Path to reclass-ansible is missing!"; exit 0;
+
+
+
 ## functions ##
 
 print_usage()
 {
     echo "usage: $0 [options] action"
+    echo "use '$0 help' to get a list of available commands"
 }
 
 print_help()
 {
-    print_usage
+    echo "usage: $0 [options] action"
     $_grep "^#\* " $0 | $_sed_forced 's;^#\*;;'
 }
 
@@ -226,8 +236,12 @@ fi
 ## first set the system tools
 fail=1
 for t in ${!sys_tools[@]} ; do
+    # check if sys tool exists and is executable
     if [ -x "${sys_tools[$t]##* }" ] ; then
         export ${t}="${sys_tools[$t]}"
+    # If not: Check if it exists in PATH
+    elif [ -x "$(command -v ansible-playbook)" ]; then
+        export ${t}="$(command -v $(basename ${sys_tools[$t]}))"
     else
         fail=0
         echo "Missing system tool: '${sys_tools[$t]##* }' must be installed."
@@ -1569,8 +1583,11 @@ case $1 in
                 $_xargs --no-run-if-empty --max-args 2 $_ln -s || true
         done
         echo "Re-connect ansible to our reclass inventory"
-        [ ! -f "$inventorydir/hosts" ] || $_rm "$inventorydir/hosts"
-        [ ! -f "$inventorydir/reclass-config.yml" ] || $_rm "$inventorydir/reclass-config.yml"
+        # remove hosts file if it exists
+        [ -f "$inventorydir/hosts" ] && $_rm "$inventorydir/hosts"
+        # remove reclass config if it exists
+        [ -f "$inventorydir/reclass-config.yml" ] && $_rm "$inventorydir/reclass-config.yml"
+        # create symlink to reclass-ansible
         $_ln -s $ansible_connect "$inventorydir/hosts"
         if [ -z "$_pre" ] ; then
             $_cat > "$inventorydir/reclass-config.yml" << EOF
