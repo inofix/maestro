@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-57-g45a7492
+#** Version: v1.3-70-g37fd85b
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1369,7 +1369,7 @@ case $1 in
         elif [ -n "$nodefilter" ] ; then
             hostpattern="$nodefilter"
         else
-            error "No class or node was specified.."
+            hostpattern="*"
         fi
         for d in ${!localdirs[@]} ; do
             ansibleextravars="$ansibleextravars $d=${localdirs[$d]}"
