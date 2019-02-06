@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-70-g37fd85b
+#** Version: v1.2-136-g201845d
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -25,7 +25,7 @@
 #
 ########################################################################
 [ "$1" == "debug" ] && shift && set -x
-
+# fake commit
 ## variables ##
 
 # get these repos
