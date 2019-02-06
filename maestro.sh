@@ -1635,7 +1635,7 @@ EOF
         process_nodes list_node_short ${nodes[@]}
     ;;
 #*  list                            list nodes
-    ls|list*)
+    ls|list)
         get_nodes
         process_nodes list_node ${nodes[@]}
     ;;
