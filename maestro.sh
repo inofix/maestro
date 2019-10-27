@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-74-gbedf2f6
+#** Version: v1.3-77-g4b7f329
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1579,7 +1579,7 @@ inventory_base_uri: $inventorydir
 EOF
             $_cat > "$maestrodir/ansible.cfg" << EOF
 [defaults]
-hostfile    = $inventorydir/hosts
+inventory   = $inventorydir/hosts
 timeout     = $ansible_timeout
 ansible_managed = "$ansible_managed"
 roles_path  = $maestrodir/$ansible_galaxy_roles
