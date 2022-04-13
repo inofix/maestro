@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-81-ge4ee81f
+#** Version: v1.3-82-g5790e3f
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1582,7 +1582,6 @@ inventory_base_uri: $inventorydir
 EOF
             $_cat > "$ansible_config_default" << EOF
 [defaults]
-hostfile    = $inventorydir/hosts
 inventory   = $inventorydir/hosts
 timeout     = $ansible_timeout
 ansible_managed = "$ansible_managed"
