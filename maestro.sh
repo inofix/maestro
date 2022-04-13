@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-74-gca360e8
+#** Version: v1.3-80-g1794f5f
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -41,11 +41,18 @@ declare -A localdirs
 conffile=maestro
 ### {{{
 
+# maestro's project dir - if not the current project dir (e.g. define in
+# global ~/.maestro for access to one main repo)
+maestrodir="$PWD"
+
 # some "sane" ansible default values
 ansible_managed="Ansible managed. All local changes will be lost!"
 ansible_timeout="60"
 ansible_scp_if_ssh="True"
 ansible_galaxy_roles=".ansible-galaxy-roles"
+
+# ansible config file
+ansible_config_default="$maestrodir/ansible.cfg"
 
 # whether to ask or not before applying changes..
 force=1
@@ -64,10 +71,6 @@ rsync_options="-a -m --exclude=.keep"
 
 merge_only_this_subdir=""
 merge_mode="dir"
-
-# maestro's git repo - if not the current project dir (e.g. define in
-# global ~/.maestro for access to one main repo)
-maestrodir="$PWD"
 
 # usually inside the local dir
 workdir="./workdir"
@@ -734,7 +737,7 @@ ansible_connection_test()
             ;;
             scp_if_ssh)
                 if [ ${ansible_meta[$o]} == "true" ] ; then
-                    print_warning "has ansible:$o set to '${ansible_meta[$o]}'. Please control your (.)ansible.cfg if you encounter problems."
+                    print_warning "has ansible:$o set to '${ansible_meta[$o]}'. Please control your $ansible_config_default if you encounter problems."
                 fi
             ;;
             become_user)
@@ -1375,7 +1378,7 @@ case $1 in
             ansibleextravars="$ansibleextravars $d=${localdirs[$d]}"
         done
         if [ -z "$ANSIBLE_CONFIG" ] ; then
-            ANSIBLE_CONFIG="$maestrodir/ansible.cfg"
+            ANSIBLE_CONFIG="$ansible_config_default"
             export ANSIBLE_CONFIG
         fi
     ;;&
@@ -1577,7 +1580,7 @@ case $1 in
 storage_type: yaml_fs
 inventory_base_uri: $inventorydir
 EOF
-            $_cat > "$maestrodir/ansible.cfg" << EOF
+            $_cat > "$ansible_config_default" << EOF
 [defaults]
 hostfile    = $inventorydir/hosts
 timeout     = $ansible_timeout
@@ -1593,7 +1596,7 @@ EOF
             echo "  storage_type: yaml_fs"
             echo "  inventory_base_uri: $inventorydir"
             echo "-EOF-"
-            echo "write config file $maestrodir/ansible.cfg"
+            echo "write config file $ansible_config_default"
             echo "  [defaults]"
             echo "  hostfile    = $inventorydir/hosts"
             echo "  timeout     = $ansible_timeout"
@@ -1605,7 +1608,7 @@ EOF
 
         fi
         if [ -z "$ANSIBLE_CONFIG" ] ; then
-            ANSIBLE_CONFIG="$maestrodir/ansible.cfg"
+            ANSIBLE_CONFIG="$ansible_config_default"
             export ANSIBLE_CONFIG
         fi
         echo "Installing all necessary ansible-galaxy roles"
