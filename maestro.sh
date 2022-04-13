@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-80-g1794f5f
+#** Version: v1.3-81-ge4ee81f
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -1583,6 +1583,7 @@ EOF
             $_cat > "$ansible_config_default" << EOF
 [defaults]
 hostfile    = $inventorydir/hosts
+inventory   = $inventorydir/hosts
 timeout     = $ansible_timeout
 ansible_managed = "$ansible_managed"
 roles_path  = $maestrodir/$ansible_galaxy_roles
