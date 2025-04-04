@@ -320,7 +320,7 @@ while true ; do
 #*  --verbose|-v [level]            print out what is done ([0]:quiet [1..])
         -v*|--v*)
             if [ -z "$2" ] || [ "${2:0:1}" == "-" ] ; then
-                verbosity="1"
+                verbose="1"
             elif [ -z "${2/[0-9]*/}" ] ; then
                 shift
                 verbose=$1
