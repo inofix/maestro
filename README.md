@@ -1,7 +1,9 @@
 # Maestro README #
-Orchestrate any number of orchestras (i.e. config management environements).
+Orchestrate a number of different orchestras (i.e. config management environements).
 
 ![Maestro Logo](maestro.png "A thumbsketch of what this is all about..")
+
+## Introduction
 
 'Pet' vs. 'herd'? This is the 'stable' approach!
 
@@ -24,9 +26,17 @@ tools. It must be flexible enough to be split up as needed
 and simple enough such that one can work on several projects
 without having to think too much.
 
---
+## Installation
 
-The meta data is stored with reclass[1], the actual work on the
+Just download the main script `./maestro.sh`,
+create a project directory with a copy of the config
+file `./.maestro.example` (remove '.example') in it.
+Then edit the config to your needs and execute the
+script to download and organize the rest of the project.
+
+## Background
+
+While the meta data is stored with reclass[1], the actual work on the
 hosts is done via ansible[2] playbooks, the core can be found
 under common-playbooks[3], but is easily extensible. This connector
 supports also simple merging of plain config files and other little
