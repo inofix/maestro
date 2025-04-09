@@ -34,6 +34,11 @@ file `./.maestro.example` (remove '.example') in it.
 Then edit the config to your needs and execute the
 script to download and organize the rest of the project.
 
+Note: The script will also clone the maestro.git repo if
+it is missing. In case you start from a cloned repo, you
+can also just softlink the repo inside the projects
+folder and it will not be fetched again.
+
 ## Background
 
 While the meta data is stored with reclass[1], the actual work on the

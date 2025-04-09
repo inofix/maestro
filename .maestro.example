@@ -8,6 +8,7 @@ toclone=(
     ["common_inv"]="https://github.com/inofix/common-inv"
     ["example_inv"]="https://github.com/inofix/example-inv"
     ["common_playbooks"]="https://github.com/inofix/common-inv"
+    ["maestro"]="https://github.com/inofix/maestro"
 )
 
 # a local dir for (semi-)temporary data of the hosts (can savely be removed if necessary)
