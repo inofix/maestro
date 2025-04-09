@@ -39,6 +39,12 @@ it is missing. In case you start from a cloned repo, you
 can also just softlink the repo inside the projects
 folder and it will not be fetched again.
 
+## Tested
+
+Last time the whole setup was officially tested is with
+Ansible v2.14.18 (python v3.11.2) and salt-formulas/reclass/
+v1.7.1.
+
 ## Background
 
 While the meta data is stored with reclass[1], the actual work on the
@@ -48,7 +54,7 @@ supports also simple merging of plain config files and other little
 tricks..
 
 It is currently written in bash and gawk (see [4]), but will probably
-be rewritten in python[5] soon.
+be rewritten in python[5] one day.
 
 --
  [1] http://reclass.pantsfullofunix.net/
