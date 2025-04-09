@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: v1.3-82-g5790e3f
+#** Version: v1.3-90-g9bcd5bc
 #* This script connects meta data about host projects with concrete
 #* configuration files and even configuration management solutions.
 #*
@@ -45,6 +45,10 @@ conffile=maestro
 # global ~/.maestro for access to one main repo)
 maestrodir="$PWD"
 
+# the name of maestro's git repository dir - where to clone the script
+maestro_repo_dir_name="maestro"
+maestro_repo_dir="$maestrodir/$maestro_repo_dir_name"
+
 # some "sane" ansible default values
 ansible_managed="Ansible managed. All local changes will be lost!"
 ansible_timeout="60"
@@ -75,6 +79,11 @@ merge_mode="dir"
 # usually inside the local dir
 workdir="./workdir"
 
+# the repository list to clone - at least the maestro repo must be caught
+toclone=(
+    [$maestro_repo_dir_name]="https://github.com/inofix/maestro"
+)
+
 # the reclass sources will constitute the knowledge base for the meta data
 inventorydirs=(
     ["main"]="./inventory"
@@ -96,7 +105,7 @@ localdirs=(
 )
 
 # this is the hosts link
-ansible_connect=/usr/share/reclass/reclass-ansible
+ansible_connect=$maestro_repo_dir/reclass-ansible.sh
 
 # options to pass to ansible (see also -A/--ansible-options)
 ansibleoptions=""
@@ -141,6 +150,7 @@ sys_tools=(
             ["_grep"]="/bin/grep"
             ["_id"]="/usr/bin/id"
             ["_ip"]="/bin/ip"
+            ["_jq"]="/usr/bin/jq"
             ["_ln"]="/bin/ln"
             ["_lsb_release"]="/usr/bin/lsb_release"
             ["_mkdir"]="/bin/mkdir"
